@@ -8,6 +8,7 @@ import asyncio
 from sound_generation import generate_and_download_music
 from music_generation import music_generation
 from glif import call_glif_api
+from generate_video import generate_video
 
 logging.basicConfig(level=logging.INFO)
 
@@ -134,6 +135,39 @@ async def image(ctx, *, text: str):
   except Exception as e:
     logging.exception("An error occurred while handling the image request.")
     await ctx.send(f"An error occurred while handling your image request: {e}")
+
+
+@bot.command(name='video')
+async def video(ctx, *, text: str):
+  if str(ctx.channel.id) != ACTIVE_CHANNEL_ID:
+    logging.info(f"Ignoring channel {ctx.channel.id}")
+    return
+
+  try:
+    async with ctx.typing():
+      # Start both glif API and replicate API calls concurrently
+      image_path, mp3_path = await asyncio.gather(
+        call_glif_api(text),  # Ensure this returns a local file path
+        music_generation(text)  # Ensure this returns a local file path
+      )
+
+    # Check if both the image and the music were successfully generated
+    if image_path and mp3_path:
+      # Generate the video
+      video_path = await generate_video(image_path, mp3_path)
+
+      # Send the video to the Discord channel
+      await ctx.send(file=discord.File(video_path))
+
+      # Clean up the generated files
+      os.remove(video_path)
+    else:
+      await ctx.send("An error occurred while generating the video components."
+                     )
+
+  except Exception as e:
+    logging.exception("An error occurred while handling the video request.")
+    await ctx.send(f"An error occurred while handling your video request: {e}")
 
 
 @bot.event
