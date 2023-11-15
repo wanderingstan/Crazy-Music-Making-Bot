@@ -4,7 +4,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-
 # Function to call Glif API, return URL to image
 async def call_glif_api(input_text: str) -> str:
   logging.info("Calling the Glif API.")
@@ -24,16 +23,3 @@ async def call_glif_api(input_text: str) -> str:
         error_message = f"Error calling Glif API: {response.status}"
         logging.error(error_message)
         return ''
-
-
-# Usage example:
-# async def main():
-#     image_url = await call_glif_api("Your prompt here")
-#     if image_url:
-#         print(f"Image URL: {image_url}")
-#     else:
-#         print("Failed to get image URL")
-
-# if __name__ == "__main__":
-#     import asyncio
-#     asyncio.run(main())

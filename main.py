@@ -7,8 +7,8 @@ import logging
 import asyncio
 from sound_generation import generate_and_download_music
 from music_generation import music_generation
+from video_generation import generate_video
 from glif import call_glif_api
-from generate_video import generate_video
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,28 +27,26 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 
-async def generate_music(prompt,
-                         duration="5.0",
-                         guidance_scale=2.5,
-                         n_candidates=3):
-  fullprompt = f"8 bit nintendo style gaming music with {prompt}"
+# async def generate_music(prompt,
+#                          duration="5.0",
+#                          guidance_scale=2.5,
+#                          n_candidates=3):
+#   fullprompt = f"8 bit nintendo style gaming music with {prompt}"
 
-  output = replicate_client.run(
-    "haoheliu/audio-ldm:b61392adecdd660326fc9cfc5398182437dbe5e97b5decfb36e1a36de68b5b95",
-    input={
-      "text": fullprompt,
-      "duration": duration,
-      "guidance_scale": guidance_scale,
-      "n_candidates": n_candidates
-    })
+#   output = replicate_client.run(
+#     "haoheliu/audio-ldm:b61392adecdd660326fc9cfc5398182437dbe5e97b5decfb36e1a36de68b5b95",
+#     input={
+#       "text": fullprompt,
+#       "duration": duration,
+#       "guidance_scale": guidance_scale,
+#       "n_candidates": n_candidates
+#     })
 
-  if output is None:
-    raise Exception("No output was returned from the model.")
+#   if output is None:
+#     raise Exception("No output was returned from the model.")
 
-  # Assuming the model returns a URL
-  return output
-
-
+#   # Assuming the model returns a URL
+#   return output
 async def download_music(url: str) -> str:
   logging.info("Starting download of music.")
   async with aiohttp.ClientSession() as session:
@@ -145,7 +143,7 @@ async def video(ctx, *, text: str):
 
   # Add a checkbox reaction to the message that triggered the command
   await ctx.message.add_reaction('🕑')
-  
+
   try:
     async with ctx.typing():
       # Start both glif API and replicate API calls concurrently
@@ -167,7 +165,8 @@ async def video(ctx, *, text: str):
       os.path.exists(mp3_path) and os.remove(mp3_path)
       os.path.exists(image_path) and os.remove(image_path)
     else:
-      await ctx.send("An error occurred while generating the video components.")
+      await ctx.send("An error occurred while generating the video components."
+                     )
 
   except Exception as e:
     logging.exception("An error occurred while handling the video request.")
@@ -177,7 +176,7 @@ async def video(ctx, *, text: str):
   bot_user = ctx.guild.get_member(bot.user.id)
   # Remove the checkbox reaction from the message
   await ctx.message.remove_reaction('🕑', bot_user)
-  
+
 
 @bot.event
 async def on_ready():

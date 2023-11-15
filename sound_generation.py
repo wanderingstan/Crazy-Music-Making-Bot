@@ -2,6 +2,7 @@ import replicate
 import aiohttp
 import logging
 import os
+import asyncio
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -17,8 +18,8 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)  # Replace wi
 async def generate_and_download_music(prompt, duration="5.0", guidance_scale=2.5, n_candidates=3):
     fullprompt = f"{prompt}"
 
-    # Generate music using Replicate API
-    output = replicate_client.run(
+    # Generate music using Replicate API asynchronously
+    output = await asyncio.to_thread(replicate_client.run, 
         "haoheliu/audio-ldm:b61392adecdd660326fc9cfc5398182437dbe5e97b5decfb36e1a36de68b5b95",
         input={
             "text": fullprompt,
