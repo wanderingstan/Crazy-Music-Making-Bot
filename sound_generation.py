@@ -15,7 +15,7 @@ if not REPLICATE_API_TOKEN:
 # Initialize Replicate Client with your API token
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)  # Replace with your actual API token
 
-async def generate_and_download_music(prompt, duration="5.0", guidance_scale=2.5, n_candidates=3):
+async def generate_and_download_music(prompt, duration="5.0", guidance_scale=2.5, n_candidates=3, music_filename='temp_music'):
     fullprompt = f"{prompt}"
 
     # Generate music using Replicate API asynchronously
@@ -40,7 +40,7 @@ async def generate_and_download_music(prompt, duration="5.0", guidance_scale=2.5
     async with aiohttp.ClientSession() as session:
         async with session.get(music_url) as response:
             if response.status == 200:
-                music_filename = 'temp_music.mp3'
+                music_filename += '.mp3'
                 with open(music_filename, 'wb') as f:
                     f.write(await response.read())
                 logging.info("Music downloaded successfully.")

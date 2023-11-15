@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv('mydiscordtoken')
 REPLICATE_API_TOKEN = os.getenv('REPLICATE_API_TOKEN')
 ACTIVE_CHANNEL_ID = os.getenv('ACTIVE_CHANNEL_ID')
+TEMP_PATH = "temp_files/"
 # ACTIVE_CHANNEL_ID = "988352005569384518"  # Replace with your channel ID
 
 # Discord Bot Intents
@@ -68,8 +69,10 @@ async def inspo(ctx, *, text: str):
     logging.info(f"Ignoring channel {ctx.channel.id}")
     return
 
+  prefix = TEMP_PATH + str(ctx.message.id) + "_music"
+
   try:
-    mp3_path = await generate_and_download_music(text)
+    mp3_path = await generate_and_download_music(text, prefix)
     if mp3_path:
       await ctx.send(file=discord.File(mp3_path))
 
@@ -149,13 +152,15 @@ async def video(ctx, *, text: str):
       # Start both glif API and replicate API calls concurrently
       image_path, mp3_path = await asyncio.gather(
         call_glif_api(text),  # Ensure this returns a local file path
-        music_generation(text)  # Ensure this returns a local file path
+        music_generation(
+          text,
+          filename_prefix=TEMP_PATH)  # Ensure this returns a local file path
       )
 
     # Check if both the image and the music were successfully generated
     if image_path and mp3_path:
       # Generate the video
-      video_path = await generate_video(image_path, mp3_path)
+      video_path = await generate_video(image_path, mp3_path, TEMP_PATH)
 
       # Send the video to the Discord channel
       await ctx.send(file=discord.File(video_path))

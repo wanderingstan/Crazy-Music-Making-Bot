@@ -31,14 +31,15 @@ async def download_file(url, file_name):
 
 
 async def generate_video(image_source: str = None,
-                         audio_source: str = None) -> str:
+                         audio_source: str = None,
+                         file_prefix: str = './') -> str:
   # Generate random identifier for file naming
   random_id = random.randint(1, 99999999)
 
   # Define the paths for temporary files
-  image_path = f'img{random_id}.jpg'
-  audio_path = f'wav{random_id}.mp3'
-  video_path = f'video{random_id}.mp4'
+  image_path = f'{file_prefix}img{random_id}.jpg'
+  audio_path = f'{file_prefix}wav{random_id}.mp3'
+  video_path = f'{file_prefix}video{random_id}.mp4'
 
   # Download or assign image file
   if image_source and (image_source.startswith('http://')
@@ -74,6 +75,10 @@ async def generate_video(image_source: str = None,
     raise Exception(error_message)
 
   logging.info(f"Video generated successfully: {video_path}")
+
+  # Delete temp files
+  os.path.exists(image_path) and os.remove(image_path)
+  os.path.exists(audio_path) and os.remove(audio_path)
 
   return video_path
 

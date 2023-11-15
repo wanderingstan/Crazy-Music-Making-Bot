@@ -40,7 +40,8 @@ async def music_generation(prompt,
                            temperature=1,
                            classifier_free_guidance=3,
                            output_format="wav",
-                           seed=None):
+                           seed=None,
+                           filename_prefix="./"):
 
   fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
 
@@ -71,7 +72,7 @@ async def music_generation(prompt,
   music_url = output
 
   # Download the generated music file
-  music_filename = f'{sanitize_for_unix_filename(prompt)}.{output_format}'
+  music_filename = f'{filename_prefix}{sanitize_for_unix_filename(prompt)}.{output_format}'
   async with aiohttp.ClientSession() as session:
     async with session.get(music_url) as response:
       if response.status == 200:
