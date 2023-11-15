@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "python-template"
+name = "Crazy-Music-Making-Bot"
 version = "0.1.0"
-description = ""
+description = "Glif bot experiment."
 authors = ["Stan James <stan@wanderinstan.com>"]
 
 [tool.poetry.dependencies]
@@ -16,6 +16,7 @@ aiohttp = "^3.8.6"
 ffmpeg = "1.4"
 replicate = "^0.17.0"
 typing-extensions = "^4.7.1"
+discord-py-interactions = "^5.10.0"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"
