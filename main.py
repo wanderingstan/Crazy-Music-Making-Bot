@@ -143,6 +143,9 @@ async def video(ctx, *, text: str):
     logging.info(f"Ignoring channel {ctx.channel.id}")
     return
 
+  # Add a checkbox reaction to the message that triggered the command
+  await ctx.message.add_reaction('🕑')
+  
   try:
     async with ctx.typing():
       # Start both glif API and replicate API calls concurrently
@@ -160,15 +163,21 @@ async def video(ctx, *, text: str):
       await ctx.send(file=discord.File(video_path))
 
       # Clean up the generated files
-      os.remove(video_path)
+      os.path.exists(video_path) and os.remove(video_path)
+      os.path.exists(mp3_path) and os.remove(mp3_path)
+      os.path.exists(image_path) and os.remove(image_path)
     else:
-      await ctx.send("An error occurred while generating the video components."
-                     )
+      await ctx.send("An error occurred while generating the video components.")
 
   except Exception as e:
     logging.exception("An error occurred while handling the video request.")
     await ctx.send(f"An error occurred while handling your video request: {e}")
 
+  # Get the bot's user object
+  bot_user = ctx.guild.get_member(bot.user.id)
+  # Remove the checkbox reaction from the message
+  await ctx.message.remove_reaction('🕑', bot_user)
+  
 
 @bot.event
 async def on_ready():

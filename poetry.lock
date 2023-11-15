@@ -19,6 +19,17 @@ yarl = ">=1.0,<2.0"
 speedups = ["aiodns", "brotli", "cchardet"]
 
 [[package]]
+name = "aiohttp-retry"
+version = "2.8.3"
+description = "Simple retry client for aiohttp"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+aiohttp = "*"
+
+[[package]]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -552,19 +563,21 @@ dev = ["mypy", "pylint", "pytest", "pytest-asyncio", "pytest-recording", "respx"
 
 [[package]]
 name = "replit"
-version = "3.2.5"
+version = "3.3.2"
 description = "A library for interacting with features of repl.it"
 category = "main"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = ">=3.9,<4.0"
 
 [package.dependencies]
 aiohttp = ">=3.6.2,<4.0.0"
+aiohttp-retry = ">=2.8.3,<3.0.0"
 Flask = ">=2.0.0,<3.0.0"
 protobuf = ">=4.21.8,<5.0.0"
 pyseto = ">=1.6.11,<2.0.0"
 requests = ">=2.25.1,<3.0.0"
-typing_extensions = ">=3.7.4,<4.0.0"
+typing_extensions = ">=4,<5"
+urllib3 = "1.26.15"
 Werkzeug = ">=2.0.0,<3.0.0"
 
 [[package]]
@@ -670,11 +683,11 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "typing-extensions"
-version = "3.10.0.2"
-description = "Backported and Experimental Type Hints for Python 3.5+"
+version = "4.8.0"
+description = "Backported and Experimental Type Hints for Python 3.8+"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 
 [[package]]
 name = "ujson"
@@ -686,7 +699,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "urllib3"
-version = "1.26.14"
+version = "1.26.15"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -742,10 +755,11 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "59547aa903f25c57572d9eb4dff6784dee16050a48bdf2aded4083265ed5715d"
+content-hash = "bf749efcd1267440edbb7a8cdffa67081f7d0405199e79b855ba32c062a7e9cb"
 
 [metadata.files]
 aiohttp = []
+aiohttp-retry = []
 aiosignal = []
 anyio = []
 argon2-cffi = []
