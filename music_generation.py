@@ -1,7 +1,7 @@
 import replicate
 import aiohttp
 import logging
-import os
+import asyncio
 
 # Initialize logging to only log errors
 logging.getLogger('httpx').setLevel(logging.ERROR)
@@ -45,7 +45,8 @@ async def music_generation(prompt,
   fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
 
   # Run the new music generation model using Replicate API
-  output = replicate_client.run(
+  output = await asyncio.to_thread(
+    replicate_client.run,
     "meta/musicgen:7a76a8258b23fae65c5a22debb8841d1d7e816b75c2f24218cd2bd8573787906",
     input={
       "seed": -1,
