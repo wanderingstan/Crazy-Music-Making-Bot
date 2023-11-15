@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+
 import replicate
 import aiohttp
 import os
@@ -63,28 +64,28 @@ async def download_music(url: str) -> str:
         return ''
 
 
-@bot.command()
-async def inspo(ctx, *, text: str):
-  if str(ctx.channel.id) != ACTIVE_CHANNEL_ID:
-    logging.info(f"Ignoring channel {ctx.channel.id}")
-    return
+# @bot.command()
+# async def inspo(ctx, *, text: str):
+#   if str(ctx.channel.id) != ACTIVE_CHANNEL_ID:
+#     logging.info(f"Ignoring channel {ctx.channel.id}")
+#     return
 
-  prefix = TEMP_PATH + str(ctx.message.id) + "_music"
+#   prefix = TEMP_PATH + str(ctx.message.id) + "_music"
 
-  try:
-    mp3_path = await generate_and_download_music(text, prefix)
-    if mp3_path:
-      await ctx.send(file=discord.File(mp3_path))
+#   try:
+#     mp3_path = await generate_and_download_music(text, prefix)
+#     if mp3_path:
+#       await ctx.send(file=discord.File(mp3_path))
 
-      os.remove(mp3_path)
-    else:
-      await ctx.send("An error occurred while downloading the music.")
-  except Exception as e:
-    logging.exception("An error occurred while handling the request.")
-    await ctx.send(f"An error occurred while handling your request: {e}")
+#       os.remove(mp3_path)
+#     else:
+#       await ctx.send("An error occurred while downloading the music.")
+#   except Exception as e:
+#     logging.exception("An error occurred while handling the request.")
+#     await ctx.send(f"An error occurred while handling your request: {e}")
 
 
-@bot.command(name='music')
+@bot.command(name='music', description='Generate some music from text')
 async def music(ctx, *, text: str = ""):
   if str(ctx.channel.id) != ACTIVE_CHANNEL_ID:
     logging.info(f"Ignoring channel {ctx.channel.id}")
@@ -121,7 +122,7 @@ async def music(ctx, *, text: str = ""):
   await ctx.message.remove_reaction('🕑', bot_user)
 
 
-@bot.command(name='image')
+@bot.command(name='image', description='Generate an image from text')
 async def image(ctx, *, text: str):
   if str(ctx.channel.id) != ACTIVE_CHANNEL_ID:
     logging.info(f"Ignoring channel {ctx.channel.id}")
