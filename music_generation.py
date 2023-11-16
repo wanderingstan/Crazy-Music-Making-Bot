@@ -2,21 +2,14 @@ import replicate
 import aiohttp
 import logging
 import asyncio
-
-# Initialize logging to only log errors
-logging.getLogger("httpx").setLevel(logging.ERROR)
-
-REPLICATE_API_TOKEN = "r8_5Zjjr1aoF70x2tWHIhtdiwFin6eFEMs4S7X2L"
-if not REPLICATE_API_TOKEN:
-    raise ValueError("No Replicate API token found in environment variables.")
-
-# Initialize Replicate Client with your API token
-replicate_client = replicate.Client(
-    api_token=REPLICATE_API_TOKEN
-)  # Replace with your actual API token
-
 import re
 
+# Configure logging
+# logging.basicConfig(level=logging.INFO)
+
+# Initialize logging to only log errors
+# Note: Replicate client generates a ton of info logs
+logging.getLogger("httpx").setLevel(logging.ERROR)
 
 def sanitize_for_unix_filename(s):
     # Replace spaces with underscores
@@ -32,6 +25,7 @@ def sanitize_for_unix_filename(s):
 
 
 async def music_generation(
+    REPLICATE_API_TOKEN,
     prompt,
     model_version="melody",
     duration=8,
@@ -43,9 +37,15 @@ async def music_generation(
     classifier_free_guidance=3,
     output_format="wav",
     seed=None,
-    filename_prefix="./",
+    filename_prefix="./"
 ):
     fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
+
+    if not REPLICATE_API_TOKEN:
+        raise ValueError("No Replicate API token passed.")
+
+    # Initialize Replicate Client with your API token
+    replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
     logging.info("Calling the Replicate API for music_generation.")
 
@@ -70,6 +70,7 @@ async def music_generation(
         },
     )
 
+
     if output is None:
         raise Exception("No output was returned from the model.")
 
@@ -80,6 +81,10 @@ async def music_generation(
     music_filename = (
         f"{filename_prefix}{sanitize_for_unix_filename(prompt)}.{output_format}"
     )
+    music_filename = f"{filename_prefix}music.{output_format}"
+
+    logging.info(f"Done. Saving music to {music_filename}")
+
     async with aiohttp.ClientSession() as session:
         async with session.get(music_url) as response:
             if response.status == 200:
