@@ -7,7 +7,7 @@ import os
 import logging
 import asyncio
 from music_generation import music_generation
-from video_generation import generate_video
+from video_generation import generate_video, concatenate_videos_async
 from glif import call_glif_api, call_glif_story_api
 from dotenv import load_dotenv
 
@@ -94,15 +94,44 @@ async def image(ctx, *, text: str):
     required=True,
     opt_type=OptionType.STRING,
 )
-async def image(ctx, *, prompt: str):
+async def comic(ctx, *, prompt: str):
     await ctx.defer()
 
     try:
-        image_url_1, image_url_2, image_url_3, image_url_4 = await call_glif_story_api(prompt)
-        await ctx.send(image_url_1)  # This will send the image URL directly
-        await ctx.send(image_url_2)  # This will send the image URL directly
-        await ctx.send(image_url_3)  # This will send the image URL directly
-        await ctx.send(image_url_4)  # This will send the image URL directly
+        # (
+        #     image_url_1,
+        #     image_url_2,
+        #     image_url_3,
+        #     image_url_4,
+        # ), mp3_path = await asyncio.gather(
+        #     call_glif_story_api(prompt),  # Ensure this returns a URL
+        #     music_generation(prompt, filename_prefix=TEMP_PATH),
+        # )
+
+        image_url_1, image_url_2, image_url_3, image_url_4 = await call_glif_story_api(
+            prompt
+        )
+        # await ctx.send(image_url_1)
+        # await ctx.send(image_url_2)
+        # await ctx.send(image_url_3)
+        # await ctx.send(image_url_4)
+
+        mp3_path = "./temp_files/bob.wav"
+        video_path1 = await generate_video(image_url_1, mp3_path, TEMP_PATH)
+        video_path2 = await generate_video(image_url_2, mp3_path, TEMP_PATH)
+        video_path3 = await generate_video(image_url_3, mp3_path, TEMP_PATH)
+        video_path4 = await generate_video(image_url_4, mp3_path, TEMP_PATH)
+        # await ctx.send(file=File(video_path1))
+        # await ctx.send(file=File(video_path2))
+        # await ctx.send(file=File(video_path3))
+        # await ctx.send(file=File(video_path4))
+
+        concat_video_path = await concatenate_videos_async(
+            [video_path1, video_path2, video_path3, video_path4],
+            TEMP_PATH + "concat.mp4",
+        )
+        await ctx.send(file=File(concat_video_path))
+
     except Exception as e:
         logging.exception("An error occurred while handling the image request.")
         await ctx.send(f"An error occurred while handling your image request: {e}")
@@ -125,7 +154,7 @@ async def video(ctx, *, prompt: str):
     try:
         # Start both glif API and replicate API calls concurrently
         image_path, mp3_path = await asyncio.gather(
-            call_glif_api(prompt),  # Ensure this returns a local file path
+            call_glif_api(prompt),  # Ensure this returns a URL
             music_generation(
                 prompt, filename_prefix=TEMP_PATH
             ),  # Ensure this returns a local file path
@@ -149,8 +178,6 @@ async def video(ctx, *, prompt: str):
     except Exception as e:
         logging.exception(f"An error occurred while handling the video request: {e}")
         await ctx.send(f"An error occurred while handling your video request: {e}")
-
-
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
