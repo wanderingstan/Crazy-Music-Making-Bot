@@ -50,14 +50,21 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
     description="Generate some music from text",
     scopes=[ACTIVE_CHANNEL_ID],
 )
-async def music(ctx, *, text: str = ""):
+@slash_option(
+    name="prompt",
+    description="Describe the type of music you would like.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def music(ctx, *, prompt: str = ""):
+    await ctx.defer()  # Tell discord that we're gonna be a while
+
     try:
         logging.info("music_generation")
-        mp3_path = await music_generation(text)
+        mp3_path = await music_generation(REPLICATE_API_TOKEN, prompt)
         if mp3_path:
-            async with ctx.typing():
-                await ctx.send(files=File(mp3_path))
-                os.remove(mp3_path)
+            await ctx.send(files=File(mp3_path))
+            os.remove(mp3_path)
         else:
             await ctx.send("An error occurred while generating the music.")
 
@@ -71,67 +78,21 @@ async def music(ctx, *, text: str = ""):
     description="Generate an image from text",
     scopes=[ACTIVE_CHANNEL_ID],
 )
-async def image(ctx, *, text: str):
+@slash_option(
+    name="prompt",
+    description="Describe the type of image you would like.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def image(ctx, *, prompt: str):
+    await ctx.defer()  # Tell discord that we're gonna be a while
+
     try:
-        image_url = await call_glif_api(text)
+        image_url = await call_glif_api(prompt)
         if image_url:
             await ctx.send(image_url)  # This will send the image URL directly
         else:
             await ctx.send("An error occurred or no image URL was returned.")
-    except Exception as e:
-        logging.exception("An error occurred while handling the image request.")
-        await ctx.send(f"An error occurred while handling your image request: {e}")
-
-
-@slash_command(
-    name="comic",
-    description="Generate a comic from text",
-    scopes=[ACTIVE_CHANNEL_ID],
-)
-@slash_option(
-    name="prompt",
-    description="Describe the type of retro game you want a video for.",
-    required=True,
-    opt_type=OptionType.STRING,
-)
-async def comic(ctx, *, prompt: str):
-    await ctx.defer()
-
-    try:
-        # (
-        #     image_url_1,
-        #     image_url_2,
-        #     image_url_3,
-        #     image_url_4,
-        # ), mp3_path = await asyncio.gather(
-        #     call_glif_story_api(prompt),  # Ensure this returns a URL
-        #     music_generation(prompt, filename_prefix=TEMP_PATH),
-        # )
-
-        image_url_1, image_url_2, image_url_3, image_url_4 = await call_glif_story_api(
-            prompt
-        )
-        # await ctx.send(image_url_1)
-        # await ctx.send(image_url_2)
-        # await ctx.send(image_url_3)
-        # await ctx.send(image_url_4)
-
-        mp3_path = "./temp_files/bob.wav"
-        video_path1 = await generate_video(image_url_1, mp3_path, TEMP_PATH)
-        video_path2 = await generate_video(image_url_2, mp3_path, TEMP_PATH)
-        video_path3 = await generate_video(image_url_3, mp3_path, TEMP_PATH)
-        video_path4 = await generate_video(image_url_4, mp3_path, TEMP_PATH)
-        # await ctx.send(file=File(video_path1))
-        # await ctx.send(file=File(video_path2))
-        # await ctx.send(file=File(video_path3))
-        # await ctx.send(file=File(video_path4))
-
-        concat_video_path = await concatenate_videos_async(
-            [video_path1, video_path2, video_path3, video_path4],
-            TEMP_PATH + "concat.mp4",
-        )
-        await ctx.send(file=File(concat_video_path))
-
     except Exception as e:
         logging.exception("An error occurred while handling the image request.")
         await ctx.send(f"An error occurred while handling your image request: {e}")
@@ -149,15 +110,13 @@ async def comic(ctx, *, prompt: str):
     opt_type=OptionType.STRING,
 )
 async def video(ctx, *, prompt: str):
-    await ctx.defer()
+    await ctx.defer()  # Tell discord that we're gonna be a while
 
     try:
         # Start both glif API and replicate API calls concurrently
         image_path, mp3_path = await asyncio.gather(
             call_glif_api(prompt),  # Ensure this returns a URL
-            music_generation(
-                prompt, filename_prefix=TEMP_PATH
-            ),  # Ensure this returns a local file path
+            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=TEMP_PATH),
         )
 
         # Check if both the image and the music were successfully generated
@@ -178,6 +137,54 @@ async def video(ctx, *, prompt: str):
     except Exception as e:
         logging.exception(f"An error occurred while handling the video request: {e}")
         await ctx.send(f"An error occurred while handling your video request: {e}")
+
+
+@slash_command(
+    name="comic",
+    description="Generate a comic from text",
+    scopes=[ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="prompt",
+    description="Describe the scene for your comic.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def comic(ctx, *, prompt: str):
+    await ctx.defer()
+
+    run_id = ctx.user.global_name + "_" + str(ctx.id) + "_"
+    run_path = TEMP_PATH + run_id
+
+    try:
+        (
+            image_url_1,
+            image_url_2,
+            image_url_3,
+            image_url_4,
+        ), mp3_path = await asyncio.gather(
+            call_glif_story_api(prompt),  # Ensure this returns a URL
+            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
+        )
+
+        video_path1 = await generate_video(image_url_1, mp3_path, run_path + "1_")
+        video_path2 = await generate_video(image_url_2, mp3_path, run_path + "2_")
+        video_path3 = await generate_video(image_url_3, mp3_path, run_path + "3_")
+        video_path4 = await generate_video(image_url_4, mp3_path, run_path + "4_")
+        # await ctx.send(file=File(video_path1))
+        # await ctx.send(file=File(video_path2))
+        # await ctx.send(file=File(video_path3))
+        # await ctx.send(file=File(video_path4))
+
+        concat_video_path = await concatenate_videos_async(
+            [video_path1, video_path2, video_path3, video_path4],
+            run_path + "concat.mp4",
+        )
+        await ctx.send(file=File(concat_video_path))
+
+    except Exception as e:
+        logging.exception("An error occurred while handling the image request.")
+        await ctx.send(f"An error occurred while handling your image request: {e}")
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine

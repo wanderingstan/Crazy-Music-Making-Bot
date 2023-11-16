@@ -7,9 +7,12 @@ import shutil
 import tempfile
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# logging.basicConfig(
+#     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+# )
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 
 # Default image URL
 DEFAULT_IMAGE_URL = "https://glif.app/_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdzkwltgyd%2Fimage%2Fupload%2Fv1699551574%2Fglif-run-outputs%2Fs6s7h7fypr9pr35bpxul.png&w=2048&q=75&dpl=dpl_J7MPoF6chivDp2KiVJA6mJ9faKu1"
@@ -128,14 +131,11 @@ async def generate_video(
 ) -> str:
     """ Generates video from image and audio sources using ffmpeg, returns path to local video file."""
     logging.info("generate_video zoom")
-
-    # Generate random identifier for file naming
-    random_id = random.randint(10000000, 99999999)
                                   
     # Define the paths for temporary files
-    image_path = f"{file_prefix}img{random_id}.jpg"
-    audio_path = f"{file_prefix}wav{random_id}.mp3"
-    video_path = f"{file_prefix}video{random_id}.mp4"
+    image_path = f"{file_prefix}img.jpg"
+    audio_path = f"{file_prefix}wav.mp3"
+    video_path = f"{file_prefix}video.mp4"
 
     # Download or assign image file
     if image_source and (
@@ -229,7 +229,8 @@ async def concatenate_videos_async(video_files, output_file="output.mp4"):
         list_path = list_file.name
 
     # Create the FFmpeg command
-    cmd = f'ffmpeg -safe 0 -f concat -i {list_path} -c copy {output_file}'
+    cmd = f'ffmpeg -y -safe 0 -f concat -i {list_path} -c copy {output_file}'
+    logging.info(cmd)
 
     # Run the command asynchronously
     process = await asyncio.create_subprocess_shell(
