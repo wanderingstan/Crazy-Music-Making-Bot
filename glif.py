@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+import json 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,20 +46,34 @@ async def call_glif_story_api(input_text: str) -> str:
         }
         headers = {"Content-Type": "application/json"}
 
-        async with session.post(
-            "https://simple-api.glif.app", json=payload, headers=headers
-        ) as response:
-            if response.status == 200:
-                response_data = await response.json()
-                logging.info("response_data:")
-                logging.info(response_data)
-                image_url_1 = response_data.get("image1", "")
-                image_url_2 = response_data.get("image2", "")
-                image_url_3 = response_data.get("image3", "")
-                image_url_4 = response_data.get("image4", "")
-                logging.info(f"Glif API responded with URL: {image_url_1}")
-                return image_url_1, image_url_2, image_url_3, image_url_4
-            else:
-                error_message = f"Error calling Glif API: {response.status}"
-                logging.error(error_message)
-                return ""
+        # TEST DATA
+        response_data = {'id': 'clp0liuxc0012la0f09f955rk', 'inputs': {'prompt': 'John and mary go mountain biking in the alps', 'imagestyle': 'comic book style using 8-bit pixel graphics'}, 'output': '{\n  "part1" : "John and Mary were adventurous souls who longed for the adrenaline rush of mountain biking in the majestic Alps, where snowy peaks and lush valleys intertwined to create a breathtaking backdrop for their daring escapades. Little did they know that an unexpected obstacle awaited them on their exhilarating journey.",\n  "part2" : "As they pedaled through the treacherous terrain, their bikes gracefully gliding over rocky paths and dusty trails, a sudden storm unleashed its fury upon them, turning their once peaceful ride into a battle against nature\'s wrath. With each passing minute, the wind howled louder, rain poured harder, and visibility dwindled, testing their resilience and challenging their determination to conquer the mountains.",\n  "part3" : "In the midst of the tempest, their path became obscured, leading them towards the edge of a perilous cliff. Panic and fear gripped their hearts as they realized the gravity of the situation, their bikes teetering on the brink of disaster. With no time to spare, their survival instincts kicked in, prompting them to make a split-second decision that would define their fate.",\n  "part4" : "Summoning their courage, John and Mary clung onto each other, embracing the fierce winds, and maneuvered their bikes away from the precipice, narrowly avoiding a catastrophic end. Exhausted but triumphant, they emerged from the storm, strengthened by their shared experience and a deepened bond. With the storm now behind them, they continued their exhilarating journey, etching memories of resilience and adventure into the breathtaking landscape of the Alps.",\n  "image1" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153640/glif-run-outputs/xjsjz6mcgkdfq6dqsrg7.jpg",\n  "image2" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153652/glif-run-outputs/dslwqfsqxfz6mtsbodw0.jpg",\n  "image3" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153665/glif-run-outputs/wl6vbfoyjy6axtvjcttx.jpg",\n  "image4" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153679/glif-run-outputs/ay131vvwnomkum4txidc.jpg"\n}', 'outputFull': {'type': 'TEXT', 'value': '{\n  "part1" : "John and Mary were adventurous souls who longed for the adrenaline rush of mountain biking in the majestic Alps, where snowy peaks and lush valleys intertwined to create a breathtaking backdrop for their daring escapades. Little did they know that an unexpected obstacle awaited them on their exhilarating journey.",\n  "part2" : "As they pedaled through the treacherous terrain, their bikes gracefully gliding over rocky paths and dusty trails, a sudden storm unleashed its fury upon them, turning their once peaceful ride into a battle against nature\'s wrath. With each passing minute, the wind howled louder, rain poured harder, and visibility dwindled, testing their resilience and challenging their determination to conquer the mountains.",\n  "part3" : "In the midst of the tempest, their path became obscured, leading them towards the edge of a perilous cliff. Panic and fear gripped their hearts as they realized the gravity of the situation, their bikes teetering on the brink of disaster. With no time to spare, their survival instincts kicked in, prompting them to make a split-second decision that would define their fate.",\n  "part4" : "Summoning their courage, John and Mary clung onto each other, embracing the fierce winds, and maneuvered their bikes away from the precipice, narrowly avoiding a catastrophic end. Exhausted but triumphant, they emerged from the storm, strengthened by their shared experience and a deepened bond. With the storm now behind them, they continued their exhilarating journey, etching memories of resilience and adventure into the breathtaking landscape of the Alps.",\n  "image1" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153640/glif-run-outputs/xjsjz6mcgkdfq6dqsrg7.jpg",\n  "image2" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153652/glif-run-outputs/dslwqfsqxfz6mtsbodw0.jpg",\n  "image3" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153665/glif-run-outputs/wl6vbfoyjy6axtvjcttx.jpg",\n  "image4" : "https://res.cloudinary.com/dzkwltgyd/image/upload/v1700153679/glif-run-outputs/ay131vvwnomkum4txidc.jpg"\n}'}}
+        output = json.loads(response_data.get("output"))
+        image_url_1 = output.get("image1", "")                
+        image_url_2 = output.get("image2", "")                
+        image_url_3 = output.get("image3", "")                
+        image_url_4 = output.get("image4", "")                
+
+        logging.info(f"Glif API responded with URLs: \n{image_url_1}\n{image_url_2}\n{image_url_3}\n{image_url_4}")
+        return image_url_1, image_url_2, image_url_3, image_url_4
+
+        # async with session.post(
+        #     "https://simple-api.glif.app", json=payload, headers=headers
+        # ) as response:
+        #     if response.status == 200:
+        #         response_data = await response.json()
+        #         logging.info("response_data:")
+        #         logging.info(response_data)
+
+        #         output = json.loads(response_data.get("output"))
+        #         image_url_1 = output.get("image1", "")                
+        #         image_url_2 = output.get("image2", "")                
+        #         image_url_3 = output.get("image3", "")                
+        #         image_url_4 = output.get("image4", "")                
+
+        #         logging.info(f"Glif API responded with URLs: \n{image_url_1}\n{image_url_2}\n{image_url_3}\n{image_url_4}")
+        #         return image_url_1, image_url_2, image_url_3, image_url_4
+        #     else:
+        #         error_message = f"Error calling Glif API: {response.status}"
+        #         logging.error(error_message)
+        #         return ""
