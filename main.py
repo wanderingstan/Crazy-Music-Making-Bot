@@ -8,7 +8,7 @@ import logging
 import asyncio
 from music_generation import music_generation
 from video_generation import generate_video
-from glif import call_glif_api
+from glif import call_glif_api, call_glif_story_api
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
@@ -84,6 +84,31 @@ async def image(ctx, *, text: str):
 
 
 @slash_command(
+    name="comic",
+    description="Generate a comic from text",
+    scopes=[ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="prompt",
+    description="Describe the type of retro game you want a video for.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def image(ctx, *, prompt: str):
+    await ctx.defer()
+
+    try:
+        image_url_1, image_url_2, image_url_3, image_url_4 = await call_glif_story_api(prompt)
+        await ctx.send(image_url_1)  # This will send the image URL directly
+        await ctx.send(image_url_2)  # This will send the image URL directly
+        await ctx.send(image_url_3)  # This will send the image URL directly
+        await ctx.send(image_url_4)  # This will send the image URL directly
+    except Exception as e:
+        logging.exception("An error occurred while handling the image request.")
+        await ctx.send(f"An error occurred while handling your image request: {e}")
+
+
+@slash_command(
     name="video",
     description="Generate a video from text",
     scopes=[ACTIVE_CHANNEL_ID],
@@ -115,15 +140,17 @@ async def video(ctx, *, prompt: str):
             await ctx.send(file=File(video_path))
 
             # Clean up the generated files
-            os.path.exists(video_path) and os.remove(video_path)
-            os.path.exists(mp3_path) and os.remove(mp3_path)
-            os.path.exists(image_path) and os.remove(image_path)
+            # os.path.exists(video_path) and os.remove(video_path)
+            # os.path.exists(mp3_path) and os.remove(mp3_path)
+            # os.path.exists(image_path) and os.remove(image_path)
         else:
             await ctx.send("An error occurred while generating the video components.")
 
     except Exception as e:
         logging.exception(f"An error occurred while handling the video request: {e}")
         await ctx.send(f"An error occurred while handling your video request: {e}")
+
+
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine

@@ -34,11 +34,11 @@ async def download_file(url, file_name):
 async def generate_video(
     image_source: str = None, audio_source: str = None, file_prefix: str = "./"
 ) -> str:
-    logging.info("generate_video")
+    logging.info("generate_video zoom")
 
     # Generate random identifier for file naming
-    random_id = random.randint(1, 99999999)
-
+    random_id = random.randint(10000000, 99999999)
+                                  
     # Define the paths for temporary files
     image_path = f"{file_prefix}img{random_id}.jpg"
     audio_path = f"{file_prefix}wav{random_id}.mp3"
@@ -62,12 +62,35 @@ async def generate_video(
     else:
         audio_path = audio_source
 
+
+    # Zoompan Filter:
+
+    # zoompan=z='zoom+0.001': This gradually increases the zoom over the duration. The value 0.001 controls the zoom speed. Adjust this value to change how quickly it zooms.
+    # d=125: Duration of each frame in the zoompan filter (since the input framerate is 2, this means the zoom effect will last for the entire duration of the 8-second video).
+    # x='iw/2-(iw/zoom/2)' and y='ih/2-(ih/zoom/2)': These are the x and y positions for the center of the zoom. This will keep the zoom centered.
+    # s=hd1080: Sets the output size. You can adjust this according to your needs (e.g., hd720 for 720p).
+    # Filter Complex:
+
+    # The -filter_complex is used because the zoompan filter is a complex filter. It processes the video stream [0:v] and then concatenates it with the audio [1:a].
+    # Maps:
+
+    # -map '[v]' -map '[a]' ensures that the output uses the video and audio streams from the filter complex.
+
+
     # Construct the ffmpeg command with fixed 8 seconds duration
+    # cmd = (
+    #     f"ffmpeg -loop 1 -framerate 2 -i {image_path} -i {audio_path} "
+    #     f"-c:v libx264 -tune stillimage -c:a aac -strict experimental "
+    #     f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
+    # )
     cmd = (
-        f"ffmpeg -loop 1 -framerate 2 -i {image_path} -i {audio_path} "
-        f"-c:v libx264 -tune stillimage -c:a aac -strict experimental "
+        f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
+        f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
+        f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
         f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
     )
+
+    logging.info(cmd)
 
     # Run the ffmpeg command
     process = await asyncio.create_subprocess_shell(
