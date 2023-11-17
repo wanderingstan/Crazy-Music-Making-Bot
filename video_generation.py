@@ -109,8 +109,8 @@ async def generate_video(
     logging.info(f"Video generated successfully: {video_path}")
 
     # Delete temp files
-    # os.path.exists(image_path) and os.remove(image_path)
-    # os.path.exists(audio_path) and os.remove(audio_path)
+    os.path.exists(image_path) and os.remove(image_path)
+    os.path.exists(audio_path) and os.remove(audio_path)
 
     return video_path
 

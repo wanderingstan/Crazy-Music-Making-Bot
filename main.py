@@ -143,9 +143,9 @@ async def video(ctx, *, prompt: str):
             await ctx.send(file=File(video_path))
 
             # Clean up the generated files
-            # os.path.exists(video_path) and os.remove(video_path)
-            # os.path.exists(mp3_path) and os.remove(mp3_path)
-            # os.path.exists(image_path) and os.remove(image_path)
+            os.path.exists(video_path) and os.remove(video_path)
+            os.path.exists(mp3_path) and os.remove(mp3_path)
+            os.path.exists(image_path) and os.remove(image_path)
         else:
             await ctx.send("An error occurred while generating the video components.")
 
