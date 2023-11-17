@@ -5,7 +5,10 @@ import asyncio
 import re
 
 # Configure logging
-# logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Initialize logging to only log errors
 # Note: Replicate client generates a ton of info logs
