@@ -17,6 +17,7 @@ ffmpeg = "1.4"
 replicate = "^0.17.0"
 typing-extensions = "^4.7.1"
 discord-py-interactions = "^5.10.0"
+python-dotenv = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"
