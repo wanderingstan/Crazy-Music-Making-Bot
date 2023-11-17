@@ -14,7 +14,10 @@ from dotenv import load_dotenv
 # Load environment variables from the .env file
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Environment Variables
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -45,6 +48,11 @@ bot = Client(intents=Intents.DEFAULT)
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 
+# Return a unique filename prefix for the current user and command
+def temp_file_prefix(ctx: SlashContext):
+    return TEMP_PATH + ctx.user.global_name + "_" + str(ctx.id) + "_"
+
+
 @slash_command(
     name="music",
     description="Generate some music from text",
@@ -58,6 +66,7 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 )
 async def music(ctx, *, prompt: str = ""):
     await ctx.defer()  # Tell discord that we're gonna be a while
+    # await ctx.followup.send(f"Creating music for: {prompt}")
 
     try:
         logging.info("music_generation")
@@ -86,6 +95,7 @@ async def music(ctx, *, prompt: str = ""):
 )
 async def image(ctx, *, prompt: str):
     await ctx.defer()  # Tell discord that we're gonna be a while
+    # await ctx.followup.send(f"Creating image for: {prompt}")
 
     try:
         image_url = await call_glif_api(prompt)
@@ -111,18 +121,23 @@ async def image(ctx, *, prompt: str):
 )
 async def video(ctx, *, prompt: str):
     await ctx.defer()  # Tell discord that we're gonna be a while
+    # await ctx.followup.send(f"Creating video for: {prompt}")
 
     try:
         # Start both glif API and replicate API calls concurrently
         image_path, mp3_path = await asyncio.gather(
             call_glif_api(prompt),  # Ensure this returns a URL
-            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=TEMP_PATH),
+            music_generation(
+                REPLICATE_API_TOKEN, prompt, filename_prefix=temp_file_prefix(ctx)
+            ),
         )
 
         # Check if both the image and the music were successfully generated
         if image_path and mp3_path:
             # Generate the video
-            video_path = await generate_video(image_path, mp3_path, TEMP_PATH)
+            video_path = await generate_video(
+                image_path, mp3_path, temp_file_prefix(ctx)
+            )
 
             # Send the video to the Discord channel
             await ctx.send(file=File(video_path))
@@ -140,21 +155,19 @@ async def video(ctx, *, prompt: str):
 
 
 @slash_command(
-    name="comic",
-    description="Generate a comic from text",
+    name="film",
+    description="Generate a short film from text",
     scopes=[ACTIVE_CHANNEL_ID],
 )
 @slash_option(
     name="prompt",
-    description="Describe the scene for your comic.",
+    description="Describe the scene for your film.",
     required=True,
     opt_type=OptionType.STRING,
 )
 async def comic(ctx, *, prompt: str):
     await ctx.defer()
-
-    run_id = ctx.user.global_name + "_" + str(ctx.id) + "_"
-    run_path = TEMP_PATH + run_id
+    # await ctx.followup.send(f"Creating film for: {prompt}")
 
     try:
         (
@@ -167,10 +180,18 @@ async def comic(ctx, *, prompt: str):
             music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
         )
 
-        video_path1 = await generate_video(image_url_1, mp3_path, run_path + "1_")
-        video_path2 = await generate_video(image_url_2, mp3_path, run_path + "2_")
-        video_path3 = await generate_video(image_url_3, mp3_path, run_path + "3_")
-        video_path4 = await generate_video(image_url_4, mp3_path, run_path + "4_")
+        video_path1 = await generate_video(
+            image_url_1, mp3_path, temp_file_prefix(ctx) + "1_"
+        )
+        video_path2 = await generate_video(
+            image_url_2, mp3_path, temp_file_prefix(ctx) + "2_"
+        )
+        video_path3 = await generate_video(
+            image_url_3, mp3_path, temp_file_prefix(ctx) + "3_"
+        )
+        video_path4 = await generate_video(
+            image_url_4, mp3_path, temp_file_prefix(ctx) + "4_"
+        )
         # await ctx.send(file=File(video_path1))
         # await ctx.send(file=File(video_path2))
         # await ctx.send(file=File(video_path3))
