@@ -1,4 +1,4 @@
-# Discord Gamebot Experiments 
+# Discord Gamebot (Experiment)
 
 *Summary: Very experimental bot for testing out fun chat experiences with Glif, and building out our bot scaffolding.*
 

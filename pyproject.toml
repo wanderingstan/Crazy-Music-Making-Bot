@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "Crazy-Music-Making-Bot"
+name = "discord-gamebot-experiment"
 version = "0.1.0"
 description = "Glif bot experiment."
 authors = ["Stan James <stan@wanderinstan.com>"]
