@@ -13,6 +13,7 @@ Linear issues:
 Built using the Python [interactions](https://github.com/interactions-py/interactions.py) discord bot library. 
 
 ## Setup
+
 Needed environment variables: (May also be in .env file)
 
 - DISCORD_TOKEN : unique token for your bot.
@@ -22,8 +23,17 @@ Needed environment variables: (May also be in .env file)
 Make sure there is a folder called `temp_files`. Over time this may fill up and need to be cleaned. 
 
 ## Running
+
+### On Replit
+
+Load the repo into Replit, set up the env vars (aka secrets) and you're good to go!
+
+### Local
+
+*TODO: Needs testing and fleshing out.*
+
 - Clone the repository.
-- Install the required dependencies using `poetry install`.
+- Install the required dependencies using `poetry install`. 
 - Create a new Discord bot on the Discord Developer Portal.
 - Copy the bot token and paste it into a `.env` file.
 - Copy the server ID and paste it into a `.env` file.
