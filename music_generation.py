@@ -50,7 +50,7 @@ async def music_generation(
     # Initialize Replicate Client with your API token
     replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
-    logging.info("Calling the Replicate API for music_generation.")
+    logging.info("🕒 Calling the Replicate API for music_generation.")
 
     # Run the new music generation model using Replicate API
     output = await asyncio.to_thread(
@@ -86,7 +86,7 @@ async def music_generation(
     )
     music_filename = f"{filename_prefix}music.{output_format}"
 
-    logging.info(f"Done. Saving music to {music_filename}")
+    logging.info(f"🟢 Saving music to {music_filename}")
 
     async with aiohttp.ClientSession() as session:
         async with session.get(music_url) as response:

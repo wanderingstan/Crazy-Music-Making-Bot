@@ -65,6 +65,12 @@ async def generate_video(
     else:
         audio_path = audio_source
 
+    if not os.path.exists(audio_source):
+      raise ValueError(f"No audio source found for video at {audio_source}.")
+
+    if not os.path.exists(image_path):
+      raise ValueError(f"No audio source found for video at {image_path}.")
+
     # Zoompan Filter:
 
     # zoompan=z='zoom+0.001': This gradually increases the zoom over the duration. The value 0.001 controls the zoom speed. Adjust this value to change how quickly it zooms.
@@ -102,15 +108,11 @@ async def generate_video(
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
-        error_message = f"ffmpeg command failed for video{random_id}:\n{stderr}"
+        error_message = f"ffmpeg command failed for video:\n{stderr}"
         logging.error(error_message)
         raise Exception(error_message)
 
     logging.info(f"Video generated successfully: {video_path}")
-
-    # Delete temp files
-    os.path.exists(image_path) and os.remove(image_path)
-    os.path.exists(audio_path) and os.remove(audio_path)
 
     return video_path
 

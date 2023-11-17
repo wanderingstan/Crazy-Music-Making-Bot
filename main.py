@@ -66,7 +66,7 @@ def temp_file_prefix(ctx: SlashContext):
 )
 async def music(ctx, *, prompt: str = ""):
     await ctx.defer()  # Tell discord that we're gonna be a while
-    # await ctx.followup.send(f"Creating music for: {prompt}")
+    logging.info(f"🔵 Creating music for: {prompt}")
 
     try:
         logging.info("music_generation")
@@ -95,7 +95,7 @@ async def music(ctx, *, prompt: str = ""):
 )
 async def image(ctx, *, prompt: str):
     await ctx.defer()  # Tell discord that we're gonna be a while
-    # await ctx.followup.send(f"Creating image for: {prompt}")
+    logging.info(f"🔵 Creating image for: {prompt}")
 
     try:
         image_url = await call_glif_api(prompt)
@@ -121,7 +121,7 @@ async def image(ctx, *, prompt: str):
 )
 async def video(ctx, *, prompt: str):
     await ctx.defer()  # Tell discord that we're gonna be a while
-    # await ctx.followup.send(f"Creating video for: {prompt}")
+    logging.info(f"🔵 Creating video for: {prompt}")
 
     try:
         # Start both glif API and replicate API calls concurrently
@@ -167,8 +167,10 @@ async def video(ctx, *, prompt: str):
 )
 async def comic(ctx, *, prompt: str):
     await ctx.defer()
-    # await ctx.followup.send(f"Creating film for: {prompt}")
+    logging.info(f"🔵 Creating film for: {prompt}")
 
+    run_path = temp_file_prefix(ctx)
+    
     try:
         (
             image_url_1,
@@ -177,7 +179,9 @@ async def comic(ctx, *, prompt: str):
             image_url_4,
         ), mp3_path = await asyncio.gather(
             call_glif_story_api(prompt),  # Ensure this returns a URL
-            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
+            music_generation(
+                REPLICATE_API_TOKEN, prompt, filename_prefix=run_path
+            ),
         )
 
         video_path1 = await generate_video(
@@ -211,7 +215,7 @@ async def comic(ctx, *, prompt: str):
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
-    logging.info("Ready")
+    logging.info("🔵 🔵 🔵 🔵 🔵 discord-gamebot-experiment")
     logging.info(f"This bot is owned by {bot.owner}")
 
 

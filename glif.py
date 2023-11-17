@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Function to call Glif API, return URL to image
 async def call_glif_api(input_text: str) -> str:
-    logging.info("Calling the Glif API.")
+    logging.info("🕒 Calling the Glif API.")
     glif_id = "clooa2ge8002sl60ixieiocdp"  # Fabian's game glif
     # glif_id = "clp0liuxc0012la0f09f955rk"
     async with aiohttp.ClientSession() as session:
@@ -21,10 +21,10 @@ async def call_glif_api(input_text: str) -> str:
             if response.status == 200:
                 response_data = await response.json()
                 image_url = response_data.get("output", "")
-                logging.info(f"Glif API responded with URL: {image_url}")
+                logging.info(f"🟢 Glif API responded with URL: {image_url}")
                 return image_url
             else:
-                error_message = f"Error calling Glif API: {response.status}"
+                error_message = f"🔴 Error calling Glif API: {response.status}"
                 logging.error(error_message)
                 return ""
 
