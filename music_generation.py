@@ -42,7 +42,13 @@ async def music_generation(
     seed=None,
     filename_prefix="./"
 ):
-    fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
+    
+    # # For testing
+    # logging.info("😎 Using fake replicate response for testing.")
+    # return ("test_files/wanderingstan_1175179192011333713_music.wav")
+
+    # fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
+    fullprompt = prompt
 
     if not REPLICATE_API_TOKEN:
         raise ValueError("No Replicate API token passed.")

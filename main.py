@@ -25,6 +25,11 @@ REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 ACTIVE_CHANNEL_ID = os.getenv("ACTIVE_CHANNEL_ID")
 TEMP_PATH = "temp_files/"
 
+# Settings
+settings = {
+    "delete_temp_files": False,
+}
+
 # Test if we have valid keys
 # Check if TOKEN is valid
 if not TOKEN:
@@ -72,8 +77,12 @@ async def music(ctx, *, prompt: str = ""):
         logging.info("music_generation")
         mp3_path = await music_generation(REPLICATE_API_TOKEN, prompt)
         if mp3_path:
-            await ctx.send(files=File(mp3_path))
-            os.remove(mp3_path)
+            # await ctx.send(files=File(mp3_path))
+            # await ctx.send(prompt)
+            await ctx.send_message(content=prompt, file=File(mp3_path))
+
+            if settings["delete_temp_files"]:
+                os.path.exists(mp3_path) and os.remove(mp3_path)
         else:
             await ctx.send("An error occurred while generating the music.")
 
@@ -101,6 +110,8 @@ async def image(ctx, *, prompt: str):
         image_url = await call_glif_api(prompt)
         if image_url:
             await ctx.send(image_url)  # This will send the image URL directly
+            await ctx.send(prompt)
+
         else:
             await ctx.send("An error occurred or no image URL was returned.")
     except Exception as e:
@@ -123,12 +134,14 @@ async def video(ctx, *, prompt: str):
     await ctx.defer()  # Tell discord that we're gonna be a while
     logging.info(f"🔵 Creating video for: {prompt}")
 
+    music_prompt = f"8 bit retro gaming soundtrack for {prompt} game"
+
     try:
         # Start both glif API and replicate API calls concurrently
         image_path, mp3_path = await asyncio.gather(
             call_glif_api(prompt),  # Ensure this returns a URL
             music_generation(
-                REPLICATE_API_TOKEN, prompt, filename_prefix=temp_file_prefix(ctx)
+                REPLICATE_API_TOKEN, music_prompt, filename_prefix=temp_file_prefix(ctx)
             ),
         )
 
@@ -141,11 +154,13 @@ async def video(ctx, *, prompt: str):
 
             # Send the video to the Discord channel
             await ctx.send(file=File(video_path))
+            await ctx.send(prompt)
 
             # Clean up the generated files
-            os.path.exists(video_path) and os.remove(video_path)
-            os.path.exists(mp3_path) and os.remove(mp3_path)
-            os.path.exists(image_path) and os.remove(image_path)
+            if settings["delete_temp_files"]:
+                os.path.exists(video_path) and os.remove(video_path)
+                os.path.exists(mp3_path) and os.remove(mp3_path)
+                os.path.exists(image_path) and os.remove(image_path)
         else:
             await ctx.send("An error occurred while generating the video components.")
 
@@ -165,12 +180,12 @@ async def video(ctx, *, prompt: str):
     required=True,
     opt_type=OptionType.STRING,
 )
-async def comic(ctx, *, prompt: str):
+async def film(ctx, *, prompt: str):
     await ctx.defer()
     logging.info(f"🔵 Creating film for: {prompt}")
 
     run_path = temp_file_prefix(ctx)
-    
+
     try:
         (
             image_url_1,
@@ -179,9 +194,7 @@ async def comic(ctx, *, prompt: str):
             image_url_4,
         ), mp3_path = await asyncio.gather(
             call_glif_story_api(prompt),  # Ensure this returns a URL
-            music_generation(
-                REPLICATE_API_TOKEN, prompt, filename_prefix=run_path
-            ),
+            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
         )
 
         video_path1 = await generate_video(
@@ -206,6 +219,7 @@ async def comic(ctx, *, prompt: str):
             run_path + "concat.mp4",
         )
         await ctx.send(file=File(concat_video_path))
+        await ctx.send(prompt)
 
     except Exception as e:
         logging.exception("An error occurred while handling the image request.")
