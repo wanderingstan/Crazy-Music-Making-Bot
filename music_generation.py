@@ -3,6 +3,7 @@ import aiohttp
 import logging
 import asyncio
 import re
+import config
 
 # Configure logging
 # Configure logging
@@ -11,7 +12,7 @@ logging.basicConfig(
 )
 
 # Initialize logging to only log errors
-# Note: Replicate client generates a ton of info logs
+#  Replicate client generates a ton of info logs so we need this.
 logging.getLogger("httpx").setLevel(logging.ERROR)
 
 def sanitize_for_unix_filename(s):
@@ -43,9 +44,10 @@ async def music_generation(
     filename_prefix="./"
 ):
     
-    # # For testing
-    # logging.info("😎 Using fake replicate response for testing.")
-    # return ("test_files/wanderingstan_1175179192011333713_music.wav")
+    # Testing
+    if config.DO_FAKE_RESULTS:
+      logging.info("😎 Using fake replicate response for testing.")
+      return ("test_files/wanderingstan_1175179192011333713_music.wav")
 
     # fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
     fullprompt = prompt
