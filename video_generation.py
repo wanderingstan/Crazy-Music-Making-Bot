@@ -90,12 +90,18 @@ async def generate_video(
     #     f"-c:v libx264 -tune stillimage -c:a aac -strict experimental "
     #     f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
     # )
+
+    # subtitle = "First line of text\nSecond line of text"
+    subtitle = ""
     cmd = (
         f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
-        f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
+        f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+        f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
         f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
         f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
     )
+
+
 
     logging.info(cmd)
 
