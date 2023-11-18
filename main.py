@@ -8,8 +8,9 @@ import logging
 import asyncio
 from music_generation import music_generation
 from video_generation import generate_video, concatenate_videos_async
-from glif import call_glif_api, call_glif_story_api
+from glif import image_glif, story_glif
 from dotenv import load_dotenv
+import config
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -19,49 +20,28 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Environment Variables
-TOKEN = os.getenv("DISCORD_TOKEN")
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
-ACTIVE_CHANNEL_ID = os.getenv("ACTIVE_CHANNEL_ID")
-TEMP_PATH = "temp_files/"
 
 # Settings
 settings = {
     "delete_temp_files": False,
 }
 
-# Test if we have valid keys
-# Check if TOKEN is valid
-if not TOKEN:
-    raise ValueError("DISCORD_TOKEN environment variable is not set or empty.")
-
-# Check if REPLICATE_API_TOKEN is valid
-if not REPLICATE_API_TOKEN:
-    raise ValueError("REPLICATE_API_TOKEN environment variable is not set or empty.")
-
-# Check if ACTIVE_CHANNEL_ID is valid
-if not ACTIVE_CHANNEL_ID:
-    raise ValueError("ACTIVE_CHANNEL_ID environment variable is not set or empty.")
-
-if not os.path.exists(TEMP_PATH):
-    raise ValueError("TEMP_PATH variable points to non existant directory.")
-
 # Discord Bot
 bot = Client(intents=Intents.DEFAULT)
 
 # Replicate Client
-replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+replicate_client = replicate.Client(api_token=config.REPLICATE_API_TOKEN)
 
 
 # Return a unique filename prefix for the current user and command
 def temp_file_prefix(ctx: SlashContext):
-    return TEMP_PATH + ctx.user.global_name + "_" + str(ctx.id) + "_"
+    return config.TEMP_PATH + ctx.user.global_name + "_" + str(ctx.id) + "_"
 
 
 @slash_command(
     name="music",
     description="Generate some music from text",
-    scopes=[ACTIVE_CHANNEL_ID],
+    scopes=[config.ACTIVE_CHANNEL_ID],
 )
 @slash_option(
     name="prompt",
@@ -75,7 +55,7 @@ async def music(ctx, *, prompt: str = ""):
 
     try:
         logging.info("music_generation")
-        mp3_path = await music_generation(REPLICATE_API_TOKEN, prompt)
+        mp3_path = await music_generation(config.REPLICATE_API_TOKEN, prompt)
         if mp3_path:
             # await ctx.send(files=File(mp3_path))
             # await ctx.send(prompt)
@@ -94,7 +74,7 @@ async def music(ctx, *, prompt: str = ""):
 @slash_command(
     name="image",
     description="Generate an image from text",
-    scopes=[ACTIVE_CHANNEL_ID],
+    scopes=[config.ACTIVE_CHANNEL_ID],
 )
 @slash_option(
     name="prompt",
@@ -107,7 +87,7 @@ async def image(ctx, *, prompt: str):
     logging.info(f"🔵 Creating image for: {prompt}")
 
     try:
-        image_url = await call_glif_api(prompt)
+        image_url = await image_glif(prompt)
         if image_url:
             await ctx.send(image_url)  # This will send the image URL directly
             await ctx.send(prompt)
@@ -122,7 +102,7 @@ async def image(ctx, *, prompt: str):
 @slash_command(
     name="video",
     description="Generate a video from text",
-    scopes=[ACTIVE_CHANNEL_ID],
+    scopes=[config.ACTIVE_CHANNEL_ID],
 )
 @slash_option(
     name="prompt",
@@ -139,9 +119,9 @@ async def video(ctx, *, prompt: str):
     try:
         # Start both glif API and replicate API calls concurrently
         image_path, mp3_path = await asyncio.gather(
-            call_glif_api(prompt),  # Ensure this returns a URL
+            image_glif(prompt),  # Ensure this returns a URL
             music_generation(
-                REPLICATE_API_TOKEN, music_prompt, filename_prefix=temp_file_prefix(ctx)
+                config.REPLICATE_API_TOKEN, music_prompt, filename_prefix=temp_file_prefix(ctx)
             ),
         )
 
@@ -172,7 +152,7 @@ async def video(ctx, *, prompt: str):
 @slash_command(
     name="film",
     description="Generate a short film from text",
-    scopes=[ACTIVE_CHANNEL_ID],
+    scopes=[config.ACTIVE_CHANNEL_ID],
 )
 @slash_option(
     name="prompt",
@@ -193,8 +173,8 @@ async def film(ctx, *, prompt: str):
             image_url_3,
             image_url_4,
         ), mp3_path = await asyncio.gather(
-            call_glif_story_api(prompt),  # Ensure this returns a URL
-            music_generation(REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
+            story_glif(prompt),  # Ensure this returns a URL
+            music_generation(config.REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
         )
 
         video_path1 = await generate_video(
@@ -233,4 +213,4 @@ async def on_ready():
     logging.info(f"This bot is owned by {bot.owner}")
 
 
-bot.start(TOKEN)
+bot.start(config.TOKEN)

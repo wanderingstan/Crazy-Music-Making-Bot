@@ -5,6 +5,7 @@ import logging
 import random
 import shutil
 import tempfile
+import config
 
 # Configure logging
 logging.basicConfig(
@@ -66,10 +67,10 @@ async def generate_video(
         audio_path = audio_source
 
     if not os.path.exists(audio_source):
-      raise ValueError(f"No audio source found for video at {audio_source}.")
+        raise ValueError(f"No audio source found for video at {audio_source}.")
 
     if not os.path.exists(image_path):
-      raise ValueError(f"No audio source found for video at {image_path}.")
+        raise ValueError(f"No audio source found for video at {image_path}.")
 
     # Zoompan Filter:
 
@@ -100,8 +101,6 @@ async def generate_video(
         f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
         f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
     )
-
-
 
     logging.info(cmd)
 
