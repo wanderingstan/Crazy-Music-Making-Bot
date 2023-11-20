@@ -296,8 +296,9 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
             mp3_path,
             run_path + "concat.mp4",
         )
-        await ctx.send(file=File(concat_video_path))
         await ctx.send(prompt)
+        await ctx.send(file=File(concat_video_path))
+        logging.info(f"🟢 Finished creating film for: {prompt}")
 
     except Exception as e:
         logging.exception("An error occurred while handling the image request.")
