@@ -228,13 +228,20 @@ async def film(ctx, *, prompt: str):
     required=True,
     opt_type=OptionType.STRING,
 )
-async def film2(ctx, *, prompt: str):
+@slash_option(
+    name="duration",
+    description="How many seconds film should last.",
+    required=False,
+    opt_type=OptionType.INTEGER,
+)
+async def film2(ctx, *, prompt: str, duration: int = 12):
     await ctx.defer()
     logging.info(f"🔵 Creating film for: {prompt}")
 
+    film_duration_s = float(duration)
+    
     run_path = temp_file_prefix(ctx)
 
-    film_duration_s = 12
     try:
         (
             image_url_1,
