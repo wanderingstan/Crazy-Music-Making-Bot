@@ -48,9 +48,10 @@ async def music_generation(
 ):
     # Testing
     if config.DO_FAKE_RESULTS:
-        logging.info("😎 Using fake replicate response for testing. Ignoring duration.")
+        logging.info("😎 Using fake replicate response for testing. Ignoring duration and other settings.")
         return "test_files/wanderingstan_1175179192011333713_music.wav"
 
+    # Note: Don't fully understand the continuation settings yet.
     if continuation_end == 0:
         continuation_end = duration
         
