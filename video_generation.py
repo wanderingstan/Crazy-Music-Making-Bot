@@ -19,6 +19,7 @@ logging.basicConfig(level=logging.INFO)
 DEFAULT_IMAGE_URL = "https://glif.app/_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdzkwltgyd%2Fimage%2Fupload%2Fv1699551574%2Fglif-run-outputs%2Fs6s7h7fypr9pr35bpxul.png&w=2048&q=75&dpl=dpl_J7MPoF6chivDp2KiVJA6mJ9faKu1"
 
 
+# Download a file from a URL to a local file
 async def download_file(url, file_name):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -37,8 +38,13 @@ async def download_file(url, file_name):
                 raise Exception(error_msg)
 
 
+# Generate a video from an image and audio source
 async def generate_video(
-    image_source: str = None, audio_source: str = None, file_prefix: str = "./"
+    image_source: str = None,
+    audio_source: str = None,
+    file_prefix: str = "./",
+    duration: int = None,
+    subtitle: str = "",
 ) -> str:
     """Generates video from image and audio sources using ffmpeg, returns path to local video file."""
     logging.info("generate_video zoom")
@@ -58,6 +64,9 @@ async def generate_video(
     else:
         image_path = await download_file(DEFAULT_IMAGE_URL, image_path)
 
+    if not audio_source and duration is None:
+        raise ValueError(f"No audio source found for video at {audio_source}.")
+
     # Download or assign audio file
     if audio_source and (
         audio_source.startswith("http://") or audio_source.startswith("https://")
@@ -66,8 +75,8 @@ async def generate_video(
     else:
         audio_path = audio_source
 
-    if not os.path.exists(audio_source):
-        raise ValueError(f"No audio source found for video at {audio_source}.")
+    if not audio_source and duration is None:
+        raise ValueError(f"No audio source or duration provided.")
 
     if not os.path.exists(image_path):
         raise ValueError(f"No audio source found for video at {image_path}.")
@@ -92,15 +101,45 @@ async def generate_video(
     #     f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
     # )
 
-    # subtitle = "First line of text\nSecond line of text"
-    subtitle = ""
-    cmd = (
-        f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
-        f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
-        f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
-        f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
-        f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
-    )
+    # This fancy code from ChatGPT doesn't work
+
+    # audio_option = f"-i {audio_path}" if audio_path is not None else ""
+    # filter_complex_audio = (
+    #     "[fv][1:a]concat=n=1:v=1:a=1[v][a]" if audio_path is not None else "[fv]"
+    # )
+    # map_option = "-map '[v]' -map '[a]'" if audio_path is not None else "-map '[v]'"
+    # audio_codec_option = (
+    #     "-c:a aac -strict experimental -b:a 192k" if audio_path is not None else ""
+    # )
+    # duration_option = f"-t {duration}" if duration is not None else ""
+
+    # cmd = (
+    #     f"ffmpeg -loop 1 -framerate 10 -i {image_path} {audio_option} "
+    #     f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+    #     f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[{filter_complex_audio}]\" "
+    #     f"{map_option} -c:v libx264 -tune stillimage {audio_codec_option} "
+    #     f"-pix_fmt yuv420p {duration_option} {video_path}"
+    # )
+
+    subtitle = "Here is a"
+
+    if audio_source is not None:
+      # Duration implied from audio
+      cmd = (
+          f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
+          f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+          f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
+          f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
+          f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
+      )
+    else:
+      # Duration specified
+      cmd = (
+          f"ffmpeg -loop 1 -framerate 10 -i {image_path} "
+          f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+          f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv]\" "
+          f"-map '[fv]' -c:v libx264 -tune stillimage -pix_fmt yuv420p -t {duration} {video_path}"
+      )
 
     logging.info(cmd)
 

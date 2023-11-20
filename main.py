@@ -121,7 +121,9 @@ async def video(ctx, *, prompt: str):
         image_path, mp3_path = await asyncio.gather(
             image_glif(prompt),  # Ensure this returns a URL
             music_generation(
-                config.REPLICATE_API_TOKEN, music_prompt, filename_prefix=temp_file_prefix(ctx)
+                config.REPLICATE_API_TOKEN,
+                music_prompt,
+                filename_prefix=temp_file_prefix(ctx),
             ),
         )
 
@@ -129,8 +131,11 @@ async def video(ctx, *, prompt: str):
         if image_path and mp3_path:
             # Generate the video
             video_path = await generate_video(
-                image_path, mp3_path, temp_file_prefix(ctx)
+                image_path, None, temp_file_prefix(ctx), duration=10
             )
+            # video_path = await generate_video(
+            #     image_path, mp3_path, temp_file_prefix(ctx)
+            # )
 
             # Send the video to the Discord channel
             await ctx.send(file=File(video_path))
@@ -174,7 +179,9 @@ async def film(ctx, *, prompt: str):
             image_url_4,
         ), mp3_path = await asyncio.gather(
             story_glif(prompt),  # Ensure this returns a URL
-            music_generation(config.REPLICATE_API_TOKEN, prompt, filename_prefix=run_path),
+            music_generation(
+                config.REPLICATE_API_TOKEN, prompt, filename_prefix=run_path
+            ),
         )
 
         video_path1 = await generate_video(
