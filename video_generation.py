@@ -43,7 +43,7 @@ async def generate_video(
     image_source: str = None,
     audio_source: str = None,
     file_prefix: str = "./",
-    duration: int = None,
+    duration: float = None,
     subtitle: str = "",
 ) -> str:
     """Generates video from image and audio sources using ffmpeg, returns path to local video file."""
@@ -80,67 +80,28 @@ async def generate_video(
         raise ValueError(f"No audio source or duration provided.")
 
     if not os.path.exists(image_path):
-        raise ValueError(f"No audio source found for video to go with image {image_path}.")
+        raise ValueError(
+            f"No audio source found for video to go with image {image_path}."
+        )
 
-    # Zoompan Filter:
-
-    # zoompan=z='zoom+0.001': This gradually increases the zoom over the duration. The value 0.001 controls the zoom speed. Adjust this value to change how quickly it zooms.
-    # d=125: Duration of each frame in the zoompan filter (since the input framerate is 2, this means the zoom effect will last for the entire duration of the 8-second video).
-    # x='iw/2-(iw/zoom/2)' and y='ih/2-(ih/zoom/2)': These are the x and y positions for the center of the zoom. This will keep the zoom centered.
-    # s=hd1080: Sets the output size. You can adjust this according to your needs (e.g., hd720 for 720p).
-    # Filter Complex:
-
-    # The -filter_complex is used because the zoompan filter is a complex filter. It processes the video stream [0:v] and then concatenates it with the audio [1:a].
-    # Maps:
-
-    # -map '[v]' -map '[a]' ensures that the output uses the video and audio streams from the filter complex.
-
-    # Construct the ffmpeg command with fixed 8 seconds duration
-    # cmd = (
-    #     f"ffmpeg -loop 1 -framerate 2 -i {image_path} -i {audio_path} "
-    #     f"-c:v libx264 -tune stillimage -c:a aac -strict experimental "
-    #     f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
-    # )
-
-    # This fancy code from ChatGPT doesn't work
-
-    # audio_option = f"-i {audio_path}" if audio_path is not None else ""
-    # filter_complex_audio = (
-    #     "[fv][1:a]concat=n=1:v=1:a=1[v][a]" if audio_path is not None else "[fv]"
-    # )
-    # map_option = "-map '[v]' -map '[a]'" if audio_path is not None else "-map '[v]'"
-    # audio_codec_option = (
-    #     "-c:a aac -strict experimental -b:a 192k" if audio_path is not None else ""
-    # )
-    # duration_option = f"-t {duration}" if duration is not None else ""
-
-    # cmd = (
-    #     f"ffmpeg -loop 1 -framerate 10 -i {image_path} {audio_option} "
-    #     f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
-    #     f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[{filter_complex_audio}]\" "
-    #     f"{map_option} -c:v libx264 -tune stillimage {audio_codec_option} "
-    #     f"-pix_fmt yuv420p {duration_option} {video_path}"
-    # )
-
-    subtitle = "Here is a subtitle."
-
+    # Create the ffmpeg command
     if audio_source is not None:
-      # Duration implied from audio
-      cmd = (
-          f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
-          f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
-          f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
-          f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
-          f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
-      )
+        # Duration implied from audio
+        cmd = (
+            f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
+            f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+            f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv];[fv][1:a]concat=n=1:v=1:a=1[v][a]\" "
+            f"-map '[v]' -map '[a]' -c:v libx264 -tune stillimage -c:a aac -strict experimental "
+            f"-b:a 192k -pix_fmt yuv420p -t 8 {video_path}"
+        )
     else:
-      # Duration specified
-      cmd = (
-          f"ffmpeg -loop 1 -framerate 10 -i {image_path} "
-          f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
-          f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv]\" "
-          f"-map '[fv]' -c:v libx264 -tune stillimage -pix_fmt yuv420p -t {duration} {video_path}"
-      )
+        # Duration specified
+        cmd = (
+            f"ffmpeg -loop 1 -framerate 10 -i {image_path} "
+            f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
+            f"drawtext=text='{subtitle}':fontsize=64:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=h-th-100[fv]\" "
+            f"-map '[fv]' -c:v libx264 -tune stillimage -pix_fmt yuv420p -t {duration} {video_path}"
+        )
 
     logging.info(cmd)
 
@@ -203,3 +164,31 @@ async def concatenate_videos_async(video_files, output_file="output.mp4"):
     os.remove(list_path)
 
     return os.path.abspath(output_file)
+
+async def concatenate_videos_with_audio_async(video1, video2, video3, video4, audio_file, output_file="output.mp4"):
+
+  # Ensure FFmpeg is installed
+  if not shutil.which("ffmpeg"):
+      raise RuntimeError("FFmpeg is not installed or not in the PATH.")
+
+  cmd = (
+      f"ffmpeg -i {video1} -i {video2} -i {video3} -i {video4} -i {audio_file} "
+      f"-filter_complex \"[0:v][1:v][2:v][3:v]concat=n=4:v=1:a=0[outv]\" "
+      f"-map \"[outv]\" -map 4:a -c:a aac -strict -2 -y {output_file}"
+  )
+
+  # Run the command asynchronously
+  process = await asyncio.create_subprocess_shell(
+      cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+  )
+
+  # Wait for the command to complete and capture stdout and stderr
+  stdout, stderr = await process.communicate()
+
+  # Check for errors
+  if process.returncode != 0:
+      error_message = f"FFmpeg command failed: {stderr.decode('utf-8')}"
+      raise Exception(error_message)
+
+  return os.path.abspath(output_file)
+
