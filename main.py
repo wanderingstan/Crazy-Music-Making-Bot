@@ -7,7 +7,11 @@ import os
 import logging
 import asyncio
 from music_generation import music_generation
-from video_generation import generate_video, concatenate_videos_async
+from video_generation import (
+    generate_video,
+    concatenate_videos_async,
+    concatenate_videos_with_audio_async,
+)
 from glif import image_glif, story_glif
 from dotenv import load_dotenv
 import config
@@ -203,6 +207,86 @@ async def film(ctx, *, prompt: str):
 
         concat_video_path = await concatenate_videos_async(
             [video_path1, video_path2, video_path3, video_path4],
+            run_path + "concat.mp4",
+        )
+        await ctx.send(file=File(concat_video_path))
+        await ctx.send(prompt)
+
+    except Exception as e:
+        logging.exception("An error occurred while handling the image request.")
+        await ctx.send(f"An error occurred while handling your image request: {e}")
+
+
+@slash_command(
+    name="film2",
+    description="Generate a short film from text",
+    scopes=[config.ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="prompt",
+    description="Describe the scene for your film.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def film2(ctx, *, prompt: str):
+    await ctx.defer()
+    logging.info(f"🔵 Creating film for: {prompt}")
+
+    run_path = temp_file_prefix(ctx)
+
+    film_duration_s = 12
+    try:
+        (
+            image_url_1,
+            image_url_2,
+            image_url_3,
+            image_url_4,
+        ), mp3_path = await asyncio.gather(
+            story_glif(prompt),  # Ensure this returns a URL
+            music_generation(
+                config.REPLICATE_API_TOKEN,
+                prompt,
+                filename_prefix=run_path,
+                duration=film_duration_s,
+            ),
+        )
+
+        video_path1 = await generate_video(
+            image_url_1,
+            None,
+            temp_file_prefix(ctx) + "1_",
+            duration=film_duration_s / 4,
+        )
+        video_path2 = await generate_video(
+            image_url_2,
+            None,
+            temp_file_prefix(ctx) + "2_",
+            duration=film_duration_s / 4,
+        )
+        video_path3 = await generate_video(
+            image_url_3,
+            None,
+            temp_file_prefix(ctx) + "3_",
+            duration=film_duration_s / 4,
+        )
+        video_path4 = await generate_video(
+            image_url_4,
+            None,
+            temp_file_prefix(ctx) + "4_",
+            duration=film_duration_s / 4,
+        )
+        # await ctx.send(file=File(video_path1))
+        # await ctx.send(file=File(video_path2))
+        # await ctx.send(file=File(video_path3))
+        # await ctx.send(file=File(video_path4))
+
+        logging.info("concatenate_videos_with_audio_async")
+        concat_video_path = await concatenate_videos_with_audio_async(
+            video_path1,
+            video_path2,
+            video_path3,
+            video_path4,
+            mp3_path,
             run_path + "concat.mp4",
         )
         await ctx.send(file=File(concat_video_path))

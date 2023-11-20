@@ -15,6 +15,7 @@ logging.basicConfig(
 #  Replicate client generates a ton of info logs so we need this.
 logging.getLogger("httpx").setLevel(logging.ERROR)
 
+
 def sanitize_for_unix_filename(s):
     # Replace spaces with underscores
     s = s.replace(" ", "_")
@@ -33,6 +34,8 @@ async def music_generation(
     prompt,
     model_version="melody",
     duration=8,
+    continuation_end=0,  # 9,
+    continuation_start=0,  # 7,
     continuation=False,
     normalization_strategy="loudness",
     top_k=250,
@@ -41,14 +44,16 @@ async def music_generation(
     classifier_free_guidance=3,
     output_format="wav",
     seed=None,
-    filename_prefix="./"
+    filename_prefix="./",
 ):
-    
     # Testing
     if config.DO_FAKE_RESULTS:
-      logging.info("😎 Using fake replicate response for testing.")
-      return ("test_files/wanderingstan_1175179192011333713_music.wav")
+        logging.info("😎 Using fake replicate response for testing. Ignoring duration.")
+        return "test_files/wanderingstan_1175179192011333713_music.wav"
 
+    if continuation_end == 0:
+        continuation_end = duration
+        
     # fullprompt = f"8 bit retro gaming soundtrack for {prompt} game"
     fullprompt = prompt
 
@@ -66,21 +71,20 @@ async def music_generation(
         "meta/musicgen:7a76a8258b23fae65c5a22debb8841d1d7e816b75c2f24218cd2bd8573787906",
         input={
             "seed": -1,
-            "top_k": 250,
-            "top_p": 0,
+            "top_k": top_k,
+            "top_p": top_p,
             "prompt": fullprompt,
-            "duration": 8,
-            "temperature": 1,
-            "continuation": False,
+            "duration": duration,
+            "temperature": temperature,
+            "continuation": continuation,
             "model_version": "large",
-            "output_format": "wav",
-            "continuation_end": 9,
-            "continuation_start": 7,
-            "normalization_strategy": "peak",
-            "classifier_free_guidance": 3,
+            "output_format": output_format,
+            "continuation_end": continuation_end,
+            "continuation_start": continuation_start,
+            "normalization_strategy": normalization_strategy,  # "peak",
+            "classifier_free_guidance": classifier_free_guidance,
         },
     )
-
 
     if output is None:
         raise Exception("No output was returned from the model.")
