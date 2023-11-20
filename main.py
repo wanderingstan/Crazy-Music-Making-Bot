@@ -105,7 +105,7 @@ async def image(ctx, *, prompt: str):
 
 @slash_command(
     name="video",
-    description="Generate a video from text",
+    description="Generate a video about a videogame from text",
     scopes=[config.ACTIVE_CHANNEL_ID],
 )
 @slash_option(
@@ -135,11 +135,8 @@ async def video(ctx, *, prompt: str):
         if image_path and mp3_path:
             # Generate the video
             video_path = await generate_video(
-                image_path, None, temp_file_prefix(ctx), duration=10
+                image_path, mp3_path, temp_file_prefix(ctx), duration=8
             )
-            # video_path = await generate_video(
-            #     image_path, mp3_path, temp_file_prefix(ctx)
-            # )
 
             # Send the video to the Discord channel
             await ctx.send(file=File(video_path))

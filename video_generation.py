@@ -87,6 +87,7 @@ async def generate_video(
     # Create the ffmpeg command
     if audio_source is not None:
         # Duration implied from audio
+        logging.info(f"Duration implied from audio: {audio_path}")
         cmd = (
             f"ffmpeg -loop 1 -framerate 10 -i {image_path} -i {audio_path} "
             f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
@@ -96,6 +97,7 @@ async def generate_video(
         )
     else:
         # Duration specified
+        logging.info(f"Duration specified: {duration}")
         cmd = (
             f"ffmpeg -loop 1 -framerate 10 -i {image_path} "
             f"-filter_complex \"[0:v]zoompan=z='zoom+0.001':d=200:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1024x1024, "
