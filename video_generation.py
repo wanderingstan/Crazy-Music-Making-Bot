@@ -62,6 +62,7 @@ async def generate_video(
     elif image_source:
         image_path = image_source
     else:
+        logging.warn(f"Could not find image source of {image_source}, using default.")
         image_path = await download_file(DEFAULT_IMAGE_URL, image_path)
 
     if not audio_source and duration is None:
@@ -79,7 +80,7 @@ async def generate_video(
         raise ValueError(f"No audio source or duration provided.")
 
     if not os.path.exists(image_path):
-        raise ValueError(f"No audio source found for video at {image_path}.")
+        raise ValueError(f"No audio source found for video to go with image {image_path}.")
 
     # Zoompan Filter:
 
@@ -121,7 +122,7 @@ async def generate_video(
     #     f"-pix_fmt yuv420p {duration_option} {video_path}"
     # )
 
-    subtitle = "Here is a"
+    subtitle = "Here is a subtitle."
 
     if audio_source is not None:
       # Duration implied from audio
