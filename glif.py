@@ -14,7 +14,8 @@ async def image_glif(input_text: str) -> str:
     # glif_id = "clp0liuxc0012la0f09f955rk"
 
     if config.DO_FAKE_RESULTS:
-        return "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
+        # return "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
+        return f"./test_files/wanderingstan_1175179192011333713_img.jpg"
 
     async with aiohttp.ClientSession() as session:
         payload = {"id": glif_id, "input": [input_text]}
