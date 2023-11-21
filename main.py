@@ -12,7 +12,7 @@ from video_generation import (
     concatenate_videos_async,
     concatenate_videos_with_audio_async,
 )
-from glif import image_glif, story_glif
+from glif import image_glif, story_glif, chattorio_glif
 from dotenv import load_dotenv
 import config
 
@@ -236,7 +236,7 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
     logging.info(f"🔵 Creating film for: {prompt}")
 
     film_duration_s = float(duration)
-    
+
     run_path = temp_file_prefix(ctx)
 
     try:
@@ -300,6 +300,48 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
     except Exception as e:
         logging.exception("An error occurred while handling the image request.")
         await ctx.send(f"An error occurred while handling your image request: {e}")
+
+
+@slash_command(
+    name="chattorio",
+    description="Make a chattorio move",
+    scopes=[config.ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="action",
+    description="Describe your action.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def chattorio(ctx, *, action: str):
+    await ctx.defer()
+    logging.info(f"🔵 Doing chattorio for: {action}")
+
+    run_path = temp_file_prefix(ctx)
+
+    player_id = ctx.user.global_name
+
+    try:
+        start_state, narrator, reasoning, updated_state = await chattorio_glif(
+            action_input_text=action, player_id=player_id
+        )
+        if not narrator:
+            await ctx.send("An error occurred in chattorio.")
+            return
+
+        await ctx.send(
+            "start state:\n"
+            + start_state
+            + "\n\nUpdate:\n"
+            + narrator
+            + "\n\nNew state:\n"
+            + updated_state
+        )
+        logging.info("🟢" + f" Finished chattorio move for {player_id} performing {action})")
+
+    except Exception as e:
+        logging.exception("An error occurred while handling the chattorio request.")
+        await ctx.send(f"An error occurred while handling your chattorio request: {e}")
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
