@@ -6,6 +6,7 @@ import aiohttp
 import os
 import logging
 import asyncio
+import json
 from music_generation import music_generation
 from video_generation import (
     generate_video,
@@ -15,6 +16,7 @@ from video_generation import (
 from glif import image_glif, story_glif, chattorio_glif
 from dotenv import load_dotenv
 import config
+
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -313,7 +315,14 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
     required=True,
     opt_type=OptionType.STRING,
 )
-async def chattorio(ctx, *, action: str):
+@slash_option(
+    name="glif_id",
+    description="ID of Glif to use going forward. (Advanced)",
+    required=False,
+    opt_type=OptionType.STRING,
+)
+
+async def chattorio(ctx, *, action: str, glif_id: str = None):
     await ctx.defer()
     logging.info(f"🔵 Doing chattorio for: {action}")
 
@@ -323,19 +332,30 @@ async def chattorio(ctx, *, action: str):
 
     try:
         start_state, narrator, reasoning, updated_state = await chattorio_glif(
-            action_input_text=action, player_id=player_id
+            action_input_text=action, player_id=player_id, glif_id=glif_id
         )
         if not narrator:
             await ctx.send("An error occurred in chattorio.")
             return
 
         await ctx.send(
-            "start state:\n"
-            + start_state
-            + "\n\nUpdate:\n"
+            ""
+            + "## Game update:\n"
             + narrator
-            + "\n\nNew state:\n"
-            + updated_state
+            + "\n## Inventory:\n"
+            + updated_state["game_state"]
+            + "||"
+            + "\n*Reasoning:*\n"
+            + reasoning
+            + "\n*Start state:*\n"
+            + "```\n"
+            + json.dumps(start_state, indent=4)
+            + "```\n"
+            + "*New state:*"
+            + "```\n"
+            + json.dumps(updated_state, indent=4)
+            + "```\n"
+            + "||"
         )
         logging.info("🟢" + f" Finished chattorio move for {player_id} performing {action})")
 

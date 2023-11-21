@@ -3,6 +3,7 @@ import logging
 import json
 import config
 import shelve
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -106,31 +107,57 @@ async def story_glif(input_text: str) -> str:
                 raise Exception(error_message)
 
 
-
 # Function to call Glif API. Returns URLs to 4 images
-async def chattorio_glif(action_input_text: str, player_id) -> str:
-    logging.info(f"🕒 Calling chattorio_glif with prompt '{action_input_text}'.")
+async def chattorio_glif(
+    action_input_text: str, player_id: str, glif_id: str = None
+) -> str:
     # glif_id = "clp8aafnv0016jr0f5wrrgalv" # Fabian's Glif
-    glif_id = "clp8kxydk004ll10glo3rskx4"  # Stan's copy of Fabian's Glif
+    default_glif_id = "clp8kxydk004ll10glo3rskx4"  # Stan's copy of Fabian's Glif
+    logging.info(f"🕒 Calling chattorio_glif with prompt '{action_input_text}'.")
+
+    # if glif_id is None:
+    #     glif_id = default_glif_id  # Stan's copy of Fabian's Glif
+
+    now = time.time()
 
     # Get existing state
-    with shelve.open("chattorio") as db:
+    with shelve.open("chattorio_db") as db:
         try:
             start_state = db[player_id]
         except KeyError:
             # First time player
-            start_state = """
+            logging.info("⚠️ First time player, creating new state.")
+            start_state = {
+                "glif_id": default_glif_id,
+                "timestamp": now, 
+                "game_state": """
 1 COAL
 2 FACTORIES
 0 IRON
-"""
+""",
+            }
+
+        if glif_id is not None:
+            logging.info(f"⚠️ As requested, changing glif_id to {glif_id}.")
+            api_glif_id = glif_id
+        elif "glif_id" not in start_state or start_state["glif_id"] is None:
+            logging.info("⚠️ No glif_id in start_state, using default.")
+            api_glif_id = default_glif_id
+        else:
+            # Normal flow
+            api_glif_id = start_state["glif_id"]
+
+        if len(api_glif_id) != 25:
+            logging.info(f"⚠️ glif_id invalid ({api_glif_id}), using default")
+            api_glif_id = default_glif_id
 
         async with aiohttp.ClientSession() as session:
             payload = {
-                "id": glif_id,
+                "id": api_glif_id,
                 "input": {
-                    "stateinput": start_state,
+                    "stateinput": start_state["game_state"],
                     "action": action_input_text,
+                    "seconds_elapsed": str(now - start_state["timestamp"]),
                 },
             }
             headers = {"Content-Type": "application/json"}
@@ -140,6 +167,9 @@ async def chattorio_glif(action_input_text: str, player_id) -> str:
                 # logging.info(f"😎 Using faked test response from Glif API responded with URLs: \n{image_url_1}\n{image_url_2}\n{image_url_3}\n{image_url_4}")
                 # return image_url_1, image_url_2, image_url_3, image_url_4
                 return "NYI"
+
+            logging.info("Payload:")
+            logging.info(payload)
 
             async with session.post(
                 "https://simple-api.glif.app", json=payload, headers=headers
@@ -151,12 +181,13 @@ async def chattorio_glif(action_input_text: str, player_id) -> str:
 
                     output = response_data.get("output")
 
-
                     logging.info(f"🟢 Glif API responded with")
                     logging.info(output)
 
-                    # Why is LLM adding these prefixes? 
-                    cleaned_output_str = output.replace('```json\n', '').replace('\n```', '')
+                    # Why is LLM adding these prefixes?
+                    cleaned_output_str = output.replace("```json\n", "").replace(
+                        "\n```", ""
+                    )
                     data = json.loads(cleaned_output_str)
 
                     if data is None:
@@ -166,13 +197,19 @@ async def chattorio_glif(action_input_text: str, player_id) -> str:
                     reasoning = data["state"]["reasoning"]
                     updated_state = data["state"]["updated_state"]
 
-                    logging.info(f"🟢 Glif API responded with", json.dumps(data, indent=4))
+                    logging.info(
+                        "🟢" + f"Glif API responded with:", json.dumps(data, indent=4)
+                    )
 
                     # Save the state
-                    db[player_id] = updated_state
-                    print(db[player_id]) 
+                    db[player_id] = {
+                        "game_state": updated_state,
+                        "timestamp": time.time(),
+                        "glif_id": glif_id,
+                    }
+                    print(db[player_id])
 
-                    return start_state, narrator, reasoning, updated_state
+                    return start_state, narrator, reasoning, db[player_id]
                 else:
                     error_message = f"Error calling Glif API: {response.status}"
                     raise Exception(error_message)
