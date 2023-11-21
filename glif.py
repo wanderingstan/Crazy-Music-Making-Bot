@@ -109,11 +109,18 @@ async def story_glif(input_text: str) -> str:
 
 # Function to call Glif API. Returns URLs to 4 images
 async def chattorio_glif(
-    action_input_text: str, player_id: str, glif_id: str = None
+    action_input_text: str, player_id: str, glif_id: str = None, inventory: str = None
 ) -> str:
+    logging.info(f"🕒 Calling chattorio_glif with prompt '{action_input_text}'.")
+
     # glif_id = "clp8aafnv0016jr0f5wrrgalv" # Fabian's Glif
     default_glif_id = "clp8kxydk004ll10glo3rskx4"  # Stan's copy of Fabian's Glif
-    logging.info(f"🕒 Calling chattorio_glif with prompt '{action_input_text}'.")
+
+    default_starting_inventory = """
+1 COAL
+2 FACTORIES
+0 IRON
+"""
 
     # if glif_id is None:
     #     glif_id = default_glif_id  # Stan's copy of Fabian's Glif
@@ -130,11 +137,7 @@ async def chattorio_glif(
             start_state = {
                 "glif_id": default_glif_id,
                 "timestamp": now, 
-                "game_state": """
-1 COAL
-2 FACTORIES
-0 IRON
-""",
+                "game_state": default_starting_inventory,
             }
 
         if glif_id is not None:
@@ -146,6 +149,10 @@ async def chattorio_glif(
         else:
             # Normal flow
             api_glif_id = start_state["glif_id"]
+
+        if inventory is not None:
+            logging.info(f"⚠️ As requested, changing inventory to {inventory}.")
+            start_state["game_state"] = inventory
 
         if len(api_glif_id) != 25:
             logging.info(f"⚠️ glif_id invalid ({api_glif_id}), using default")
@@ -205,7 +212,7 @@ async def chattorio_glif(
                     db[player_id] = {
                         "game_state": updated_state,
                         "timestamp": time.time(),
-                        "glif_id": glif_id,
+                        "glif_id": api_glif_id,
                     }
                     print(db[player_id])
 
