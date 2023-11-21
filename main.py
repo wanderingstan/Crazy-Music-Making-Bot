@@ -321,8 +321,14 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
     required=False,
     opt_type=OptionType.STRING,
 )
+@slash_option(
+    name="inventory",
+    description="Manually set your inventory, i.e. cheat. (Advanced)",
+    required=False,
+    opt_type=OptionType.STRING,
+)
 
-async def chattorio(ctx, *, action: str, glif_id: str = None):
+async def chattorio(ctx, *, action: str, glif_id: str = None, inventory: str = None):
     await ctx.defer()
     logging.info(f"🔵 Doing chattorio for: {action}")
 
@@ -332,7 +338,7 @@ async def chattorio(ctx, *, action: str, glif_id: str = None):
 
     try:
         start_state, narrator, reasoning, updated_state = await chattorio_glif(
-            action_input_text=action, player_id=player_id, glif_id=glif_id
+            action_input_text=action, player_id=player_id, glif_id=glif_id, inventory=inventory
         )
         if not narrator:
             await ctx.send("An error occurred in chattorio.")
