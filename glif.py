@@ -226,8 +226,8 @@ async def chattorio_glif(
 
                 output = response_data.get("output")
 
-                logging.info(f"🟢 Glif API responded with")
-                logging.info(output)
+                # logging.info(f"🟢 Glif API responded with (raw)")
+                # logging.info(output)
 
                 # Why is LLM adding these prefixes?
                 cleaned_output_str = output.replace("```json\n", "").replace(
@@ -244,7 +244,7 @@ async def chattorio_glif(
                 image = data["image"] if "image" in data else None
 
                 logging.info(
-                    "🟢" + f"Glif API responded with:", json.dumps(data, indent=4)
+                    "🟢 " + "Glif API responded with this json:\n" + json.dumps(data, indent=4)
                 )
 
                 # Save the state
