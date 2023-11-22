@@ -337,13 +337,16 @@ async def chattorio(ctx, *, action: str, glif_id: str = None, inventory: str = N
     player_id = ctx.user.global_name
 
     try:
-        start_state, narrator, reasoning, updated_state = await chattorio_glif(
+        start_state, narrator, reasoning, image, updated_state = await chattorio_glif(
             action_input_text=action, player_id=player_id, glif_id=glif_id, inventory=inventory
         )
         if not narrator:
             await ctx.send("An error occurred in chattorio.")
             return
 
+        if image:
+            await ctx.send(image) # Should be a URL
+            
         await ctx.send(
             ""
             + "## Game update:\n"
