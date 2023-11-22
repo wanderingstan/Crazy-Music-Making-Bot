@@ -1,5 +1,6 @@
 # Our own temp files
 temp_files/
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
