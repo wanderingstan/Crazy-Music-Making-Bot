@@ -31,3 +31,7 @@ if not os.path.exists(TEMP_PATH):
     raise ValueError(
         f"TEMP_PATH variable points to non existant directory: {TEMP_PATH}"
     )
+
+
+# path to your SQLite database
+db_path = "chattorio.sqlite3"

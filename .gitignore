@@ -1,6 +1,7 @@
 # Our own temp files
 temp_files/
 *.db
+*.sqlite3
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
