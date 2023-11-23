@@ -9,45 +9,50 @@ import sqlite3
 logging.basicConfig(level=logging.INFO)
 
 
-
-
 # Initialize and create table if it doesn't exist
 def init_db():
     with sqlite3.connect(config.db_path) as conn:
-        conn.execute('''
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS player_state (
-                player_id TEXT PRIMARY KEY,
-                glif_id TEXT,
+                id INTEGER PRIMARY KEY ,
                 timestamp REAL,
+                glif_id TEXT,
+                player_id TEXT,
+                player_action TEXT,
                 game_state TEXT
             )
-        ''')
+        """
+        )
 
 
-# Function to get player state
+# Function to get latest player state
 def get_player_state(player_id):
     with sqlite3.connect(config.db_path) as conn:
-        cursor = conn.execute('SELECT glif_id, timestamp, game_state FROM player_state WHERE player_id = ?', (player_id,))
+        cursor = conn.execute(
+            "SELECT glif_id, timestamp, game_state FROM player_state WHERE player_id = ? ORDER BY id DESC LIMIT 1",
+            (player_id,),
+        )
         row = cursor.fetchone()
         if row:
             return {"glif_id": row[0], "timestamp": row[1], "game_state": row[2]}
         return None
 
+
 # Function to update player state
-def update_player_state(player_id, glif_id, timestamp, game_state):
+def update_player_state(player_id, glif_id, timestamp, player_action, game_state):
     with sqlite3.connect(config.db_path) as conn:
-        conn.execute('''
-            INSERT INTO player_state (player_id, glif_id, timestamp, game_state)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(player_id) 
-            DO UPDATE SET
-                glif_id = excluded.glif_id,
-                timestamp = excluded.timestamp,
-                game_state = excluded.game_state
-        ''', (player_id, glif_id, timestamp, game_state))
+        conn.execute(
+            """
+            INSERT INTO player_state (player_id, glif_id, timestamp, player_action, game_state)
+            VALUES (?, ?, ?, ?, ?)
+        """,
+            (player_id, glif_id, timestamp, player_action, game_state),
+        )
 
 
 # ------------------------------------------------------------
+
 
 # Function to call Glif API, return URL to image
 async def image_glif(input_text: str) -> str:
@@ -156,8 +161,10 @@ async def chattorio_glif(
     # TODO: move this to config.py
     # default_glif_id = "clp8aafnv0016jr0f5wrrgalv" # Fabian's Glif
     # default_glif_id = "clp8kxydk004ll10glo3rskx4"  # Stan's copy of Fabian's Glif (stanbot)
-    default_glif_id = "clp94bjzu0030vf801f8t602x"  # Stan's copy of Fabian's Glif (private bot) 
-    
+    default_glif_id = (
+        "clp94bjzu0030vf801f8t602x"  # Stan's copy of Fabian's Glif (private bot)
+    )
+
     default_starting_inventory = """
 1 COAL
 2 FACTORIES
@@ -174,7 +181,7 @@ async def chattorio_glif(
         logging.info("⚠️  First time player, creating new state.")
         start_state = {
             "glif_id": default_glif_id,
-            "timestamp": now, 
+            "timestamp": now,
             "game_state": default_starting_inventory,
         }
 
@@ -244,13 +251,27 @@ async def chattorio_glif(
                 image = data["image"] if "image" in data else None
 
                 logging.info(
-                    "🟢 " + "Glif API responded with this json:\n" + json.dumps(data, indent=4)
+                    "🟢 "
+                    + " Glif API responded with this json:\n"
+                    + json.dumps(data, indent=4)
                 )
 
                 # Save the state
-                update_player_state(player_id, api_glif_id, time.time(), updated_state)
+                update_player_state(
+                    player_id,
+                    api_glif_id,
+                    time.time(),
+                    action_input_text,
+                    updated_state,
+                )
 
-                return start_state, narrator, reasoning, image, get_player_state(player_id)
+                return (
+                    start_state,
+                    narrator,
+                    reasoning,
+                    image,
+                    get_player_state(player_id),
+                )
 
             else:
                 error_message = f"Error calling Glif API: {response.status}"
