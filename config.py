@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 # Load environment variables from the .env file
 load_dotenv()
 
+# For testing, should we use results left over from previous run if we find them? 
+RECYCLE_RESULTS = os.getenv("RECYCLE_RESULTS", "FALSE").upper() == "TRUE"
+
 # For testing, shoudl we return fake results instead of calling the API?
 DO_FAKE_RESULTS = os.getenv("DO_FAKE_RESULTS", "FALSE").upper() == "TRUE"
 
