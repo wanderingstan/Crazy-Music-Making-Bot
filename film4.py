@@ -26,6 +26,11 @@ class Film4:
         speech_filename = f"{self.filename_prefix}narration.mp3"
         await self.speech_from_text(narration, speech_filename)
 
+        narration = self.data["narration"]
+        music_url = await self.music_generation(
+            self.data["music_prompt"], duration=self.data["duration"]
+        )
+
         # Collect tasks for each scene
         tasks = [
             self.create_scene(
@@ -83,6 +88,89 @@ class Film4:
     async def sound_from_prompt(self, prompt: str, duration: int = 4) -> str:
         # Implement sound_from_prompt logic
         return None
+
+    async def music_generation(
+        self,
+        prompt: str,
+        duration: int = 8,
+        model_version: str = "melody",
+        continuation_end: int = 0,  # 9,
+        continuation_start: int = 0,  # 7,
+        continuation: bool = False,
+        normalization_strategy: str = "loudness",
+        top_k: int = 250,
+        top_p: int = 0,
+        temperature: int = 1,
+        classifier_free_guidance: int = 3,
+        output_format: str = "mp3",  # "wav"
+        seed=None,
+    ):
+        logging.info("🕒 Calling the Replicate API for music_generation.")
+
+        # Testing
+        if config.DO_FAKE_RESULTS:
+            logging.info(
+                "😎 Using fake replicate response for testing. Ignoring duration and other settings."
+            )
+            return "test_files/wanderingstan_1175179192011333713_music.wav"
+
+        # Note: Don't fully understand the continuation settings yet.
+        if continuation_end == 0:
+            continuation_end = duration
+
+        if not config.REPLICATE_API_TOKEN:
+            raise ValueError("No Replicate API token passed.")
+
+        # Initialize Replicate Client with your API token
+        replicate_client = replicate.Client(api_token=config.REPLICATE_API_TOKEN)
+
+        # Run the new music generation model using Replicate API
+        output = await asyncio.to_thread(
+            replicate_client.run,
+            "meta/musicgen:7a76a8258b23fae65c5a22debb8841d1d7e816b75c2f24218cd2bd8573787906",
+            input={
+                "seed": -1,
+                "top_k": top_k,
+                "top_p": top_p,
+                "prompt": prompt,
+                "duration": duration,
+                "temperature": temperature,
+                "continuation": continuation,
+                "model_version": "large",
+                "output_format": output_format,
+                "continuation_end": continuation_end,
+                "continuation_start": continuation_start,
+                "normalization_strategy": normalization_strategy,  # "peak",
+                "classifier_free_guidance": classifier_free_guidance,
+            },
+        )
+
+        if output is None:
+            raise Exception("No output was returned from the model.")
+
+        # Assuming the model returns a URL to the generated music file
+        music_url = output
+
+        logging.info(f"🟢 music_generation: {music_url}")
+
+        return music_url
+
+        # # Download the generated music file
+        # music_filename = (
+        #     f"{filename_prefix}{sanitize_for_unix_filename(prompt)}.{output_format}"
+        # )
+        # music_filename = f"{filename_prefix}music.{output_format}"
+
+        # logging.info(f"🟢 Saving music to {music_filename}")
+
+        # async with aiohttp.ClientSession() as session:
+        #     async with session.get(music_url) as response:
+        #         if response.status == 200:
+        #             with open(music_filename, "wb") as f:
+        #                 f.write(await response.read())
+        #             return music_filename
+        #         else:
+        #             raise Exception(f"Error downloading music: {response.status}")
 
     # Function to call Glif API, return URL to image
     async def image_from_prompt(
@@ -156,8 +244,8 @@ class Film4:
             logging.info(f"🟢 Using recycled cached video file: {output_video_path}")
             return output_video_path
 
-        # video_size = "1024x1024"
-        video_size = "512x512"
+        video_size = "1024x1024"
+        # video_size = "512x512"
 
         # Create the ffmpeg command
         if audio_path is not None:
@@ -216,7 +304,9 @@ class Film4:
         # Initialize Replicate Client with your API token
         replicate_client = replicate.Client(api_token=config.REPLICATE_API_TOKEN)
 
-        logging.info("🕒 video_from_prompt_replicate1: Calling the Replicate API for video generation.")
+        logging.info(
+            "🕒 video_from_prompt_replicate1: Calling the Replicate API for video generation."
+        )
 
         # # Run the video generation model using Replicate API
         # TODO: Might be better way to do this using the _run methods:
@@ -305,8 +395,9 @@ class Film4:
     async def concatenate_videos_with_audio(
         self, video_files: List[str], audio_file: str, output_file: str = "output.mp4"
     ):
-        
-        logging.info(f"🎬 Concatenating {len(video_files)} videos with audio {audio_file} into {output_file}")
+        logging.info(
+            f"🎬 Concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
+        )
 
         # Ensure FFmpeg is installed
         if not shutil.which("ffmpeg"):
@@ -323,7 +414,7 @@ class Film4:
             f'-map "[outv]" -map {n_videos}:a -c:a aac -strict -2 -y {output_file}'
         )
         logging.info(cmd)
-        
+
         # Run the command asynchronously
         process = await asyncio.create_subprocess_shell(
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
@@ -337,7 +428,9 @@ class Film4:
             error_message = f"FFmpeg command failed: {stderr.decode('utf-8')}"
             raise Exception(error_message)
 
-        logging.info(f"🟢 Finished concatenating {len(video_files)} videos with audio {audio_file} into {output_file}")
+        logging.info(
+            "Finished concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
+        )
 
         return os.path.abspath(output_file)
 
@@ -404,7 +497,7 @@ class Film4:
 # Test code to run when script is executed directly
 if __name__ == "__main__":
     example_json_input = """{
-        "duration": "30",
+        "duration": 30,
         "music_prompt": "orchestral EDM with a hint of bluegrass, rising to a crescendo",
         "narration" : "Bunnies should be very very careful these days. They are being hunted by the evil foxes.",
         "scenes": [
@@ -420,7 +513,7 @@ if __name__ == "__main__":
                 "video_prompt": "a colorful rabbit lying dead in the street",
                 "sound_prompt": "machine gun firing",
                 "text": "Funny bunny is not happy",
-                "generator": "replicate1"                
+                "generator": "glif1"
             }
         ]
     }"""
