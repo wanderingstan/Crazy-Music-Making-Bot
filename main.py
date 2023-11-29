@@ -27,10 +27,6 @@ logging.basicConfig(
 )
 
 
-# Settings
-settings = {
-    "delete_temp_files": False,
-}
 
 # Discord Bot
 bot = Client(intents=Intents.DEFAULT)
@@ -67,7 +63,7 @@ async def music(ctx, *, prompt: str = ""):
             # await ctx.send(prompt)
             await ctx.send_message(content=prompt, file=File(mp3_path))
 
-            if settings["delete_temp_files"]:
+            if config.DELETE_TEMP_FILES:
                 os.path.exists(mp3_path) and os.remove(mp3_path)
         else:
             await ctx.send("An error occurred while generating the music.")
@@ -145,7 +141,7 @@ async def video(ctx, *, prompt: str):
             await ctx.send(prompt)
 
             # Clean up the generated files
-            if settings["delete_temp_files"]:
+            if config.DELETE_TEMP_FILES:
                 os.path.exists(video_path) and os.remove(video_path)
                 os.path.exists(mp3_path) and os.remove(mp3_path)
                 os.path.exists(image_path) and os.remove(image_path)
@@ -155,6 +151,47 @@ async def video(ctx, *, prompt: str):
     except Exception as e:
         logging.exception(f"An error occurred while handling the video request: {e}")
         await ctx.send(f"An error occurred while handling your video request: {e}")
+
+
+
+
+
+
+@slash_command(
+    name="film4",
+    description="Generate a film from text",
+    scopes=[config.ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="prompt",
+    description="Describe theme for the game.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def film4(ctx, *, prompt: str):
+    await ctx.defer()  # Tell discord that we're gonna be a while
+    logging.info(f"🔵 Creating film4 for: {prompt}")
+
+    try:
+        image_url = await image_glif(prompt)
+        if image_url:
+            await ctx.send(image_url)  # This will send the image URL directly
+            await ctx.send(prompt)
+
+        else:
+            await ctx.send("An error occurred or no image URL was returned.")
+    except Exception as e:
+        logging.exception("An error occurred while handling the image request.")
+        await ctx.send(f"An error occurred while handling your image request: {e}")
+
+
+
+    # HERE
+
+
+
+
+
 
 
 @slash_command(
