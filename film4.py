@@ -11,15 +11,16 @@ import video_generation
 
 
 class Film4:
-    def __init__(self, json_input: str, filename_prefix: str = "./temp_files/"):
+    def __init__(self, json_input: str, filename_prefix: str = "./temp_files/film4"):
         logging.basicConfig(level=logging.INFO)
 
         # Parse the JSON input
         self.data = json.loads(json_input)
-        self.filename_prefix = filename_prefix
+        self.filename_prefix: str = filename_prefix
 
     async def generate(self):
-        # Assuming self.data is already set
+        if not self.data:
+            raise ValueError("No data provided.")
 
         narration = self.data["narration"]
         speech_filename = f"{self.filename_prefix}narration.mp3"
@@ -89,6 +90,8 @@ class Film4:
         logging.info("🕒 Calling the Replicate API for video generation.")
 
         # # Run the video generation model using Replicate API
+        # TODO: Might be better way to do this using the _run methods: 
+        #       https://github.com/replicate/replicate-python#run-a-model
 
         # # https://replicate.com/cjwbw/kandinskyvideo?input=python
         # output_url = await asyncio.to_thread(
@@ -201,9 +204,7 @@ class Film4:
 
         return os.path.abspath(output_file)
 
-
-
-# [vost#0:0/copy @ 0x124b1ee50] Streamcopy requested for output stream fed from a complex filtergraph. Filtering and streamcopy cannot be used together.
+    # [vost#0:0/copy @ 0x124b1ee50] Streamcopy requested for output stream fed from a complex filtergraph. Filtering and streamcopy cannot be used together.
 
     # async def concatenate_videos_with_audio(
     #     self,
