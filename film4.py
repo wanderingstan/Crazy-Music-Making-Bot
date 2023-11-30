@@ -270,7 +270,7 @@ class Film4:
         # Add line breaks to subtitle
         subtitle = (
             self.insert_linebreaks(subtitle, 32)
-            .replace("\n", "\\\\n")
+            # .replace("\n", "\\\\n")
             .replace('"', '\\"')
             .replace("'", "\\'")
         )
