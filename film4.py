@@ -46,6 +46,9 @@ class Film4:
                     ad_json = response_data.get("output", "")
                     logging.info(f"🟢 Glif API responded with json: {ad_json}")
 
+                    # Hack for Fabian's bug
+                    # ad_json = ad_json.replace('""', '"')
+
                     self.data = json.loads(ad_json)
 
                     return ad_json
@@ -157,8 +160,9 @@ class Film4:
         seed=None,
     ):
         logging.info(
-            f"🕒 Calling the Replicate API for music_generation. {duration} seconds.
-        ")
+            f"🕒 Calling the Replicate API for music_generation." +
+            f"{duration} seconds."
+        )
 
         # Testing
         if config.DO_FAKE_RESULTS:
@@ -274,14 +278,20 @@ class Film4:
             logging.info("😎 Using fake static video response for testing.")
             return "test_files/video_gen_sample.mp4"
 
-        # Generate image from prompt using glif API
-        image_url = await self.image_from_prompt(
-            prompt, glif_id="clpljuz4w00046j7svzyue8ur"
-        )
+        # Try to generate image from prompt using glif API up to 5 times
+        for _ in range(5):
+            image_url = await self.image_from_prompt(
+                prompt, glif_id="clpljuz4w00046j7svzyue8ur"
+            )
 
-        if not image_url:
-            raise ValueError(f"No image returned from Glif API.")
+            if image_url:
+                break
 
+            # Wait for 1 second before trying again
+            await asyncio.sleep(1)
+        else:
+            # If no image is returned after 5 attempts, use the default image URL
+            image_url = "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
         # Add line breaks to subtitle
         subtitle = (
             self.insert_linebreaks(subtitle, 32)
@@ -447,10 +457,7 @@ class Film4:
             "Content-Type": "application/json",
             "xi-api-key": config.ELEVENLABS_API_TOKEN,
         }
-        data = {
-            "text": text,
-            "model_id": "eleven_turbo_v2"
-        }
+        data = {"text": text, "model_id": "eleven_turbo_v2"}
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=data) as response:
@@ -462,6 +469,7 @@ class Film4:
                     logging.error(f"Request failed: {response.status}")
                     text = await response.text()
                     logging.error(text)
+                    raise RuntimeError(f"Elevenlabs Request failed: {response.status}")
 
     async def concatenate_videos_with_audio(
         self,
