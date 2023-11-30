@@ -125,7 +125,7 @@ async def generate_video(
     return video_path
 
 
-async def concatenate_videos_async(video_files, output_file="output.mp4"):
+async def concatenate_videos_async(video_files, output_file="./temp_files/output.mp4"):
     """
     Concatenates a list of videos into a single video file using FFmpeg, asynchronously,
     using the demuxer syntax for concatenation.
@@ -167,7 +167,7 @@ async def concatenate_videos_async(video_files, output_file="output.mp4"):
 
     return os.path.abspath(output_file)
 
-async def concatenate_videos_with_audio_async(video1, video2, video3, video4, audio_file, output_file="output.mp4"):
+async def concatenate_videos_with_audio_async(video1, video2, video3, video4, audio_file, output_file="./temp_files/output.mp4"):
 
   # Ensure FFmpeg is installed
   if not shutil.which("ffmpeg"):

@@ -59,15 +59,9 @@ class Film4:
 
         narration = self.data["narration"]
         speech_filename = f"{self.filename_prefix}narration.mp3"
-        await self.speech_from_text(narration, speech_filename)
 
         # Default duration is 10 seconds
         duration = self.data["duration"] if "duration" in self.data else 10
-
-        narration = self.data["narration"]
-        music_url = await self.music_generation(
-            self.data["music_prompt"], duration=duration
-        )
 
         # Collect tasks for each scene
         tasks = [
@@ -81,13 +75,22 @@ class Film4:
             for scene in self.data["scenes"]
         ]
 
-        # Run all scene creation tasks concurrently and collect results
-        video_filenames = await asyncio.gather(*tasks)
+        # Add speech_from_text and music_generation tasks to the list
+        tasks.append(self.speech_from_text(narration, speech_filename))
+        tasks.append(
+            self.music_generation(self.data["music_prompt"], duration=duration)
+        )
+
+        # Run all tasks concurrently and collect results
+        results = await asyncio.gather(*tasks)
+
+        # The last two results are the results of speech_from_text and music_generation
+        video_filenames = results[:-2]
+        music_url = results[-1]
 
         combined_video_filename = await self.concatenate_videos_with_audio(
             video_filenames,
             speech_filename,
-            # "./test_files/wanderingstan_1175179192011333713_music.wav",
             "output.mp4",
         )
 
@@ -445,7 +448,7 @@ class Film4:
                     logging.error(text)
 
     async def concatenate_videos_with_audio(
-        self, video_files: List[str], audio_file: str, output_file: str = "output.mp4"
+        self, video_files: List[str], audio_file: str, output_file: str = "./temp_files/output.mp4"
     ):
         logging.info(
             f"🎬 Concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
@@ -492,7 +495,7 @@ class Film4:
     #     self,
     #     video_files: List[str],
     #     audio_files: List[str],
-    #     output_file: str = "output.mp4",
+    #     output_file: str = "./temp_files/output.mp4",
     # ):
     #     # Ensure FFmpeg is installed
     #     if not shutil.which("ffmpeg"):

@@ -354,7 +354,8 @@ async def advert(ctx, *, prompt: str):
         combined_video_filename = await film4.generate()
         logging.info(f"Generated combined video: {combined_video_filename}")
 
-        await ctx.send_message(content=prompt, file=File(combined_video_filename))
+        await ctx.send(file=File(combined_video_filename))
+        await ctx.send(prompt)
 
     except Exception as e:
         print(f"Error occurred: {e}")
