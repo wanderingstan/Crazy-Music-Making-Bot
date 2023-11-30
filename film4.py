@@ -11,12 +11,47 @@ import video_generation
 
 
 class Film4:
-    def __init__(self, json_input: str, filename_prefix: str = "./temp_files/film4"):
+    def __init__(self, filename_prefix: str = "./temp_files/film4"):
         logging.basicConfig(level=logging.INFO)
 
+        # Json object describing the video to be generated
+        self.data = None
+
         # Parse the JSON input
-        self.data = json.loads(json_input)
         self.filename_prefix: str = filename_prefix
+
+    # Function that calls glif API wiht id clpkl1gt8005ymrou8dvkblqv , returns json
+    async def ad_json_from_text(self, prompt: str):
+        logging.info("🕒 Calling the Glif API.")
+        glif_id = "clpkl1gt8005ymrou8dvkblqv"
+
+        # if config.DO_FAKE_RESULTS:
+        #     # return "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
+        #     return f"./test_files/wanderingstan_1175179192011333713_img.jpg"
+
+        async with aiohttp.ClientSession() as session:
+            payload = {"id": glif_id, "input": [prompt]}
+            headers = {"Content-Type": "application/json"}
+
+            async with session.post(
+                "https://simple-api.glif.app", json=payload, headers=headers
+            ) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+
+                    logging.info("response_data:")
+                    logging.info(response_data)
+
+                    ad_json = response_data.get("output", "")
+                    logging.info(f"🟢 Glif API responded with json: {ad_json}")
+
+                    self.data = json.loads(ad_json)
+
+                    return ad_json
+                else:
+                    error_message = f"Error calling Glif API: {response.status}"
+                    logging.error(error_message)
+                    raise Exception(error_message)
 
     async def generate(self):
         if not self.data:
@@ -26,19 +61,22 @@ class Film4:
         speech_filename = f"{self.filename_prefix}narration.mp3"
         await self.speech_from_text(narration, speech_filename)
 
+        # Default duration is 10 seconds
+        duration = self.data["duration"] if "duration" in self.data else 10
+
         narration = self.data["narration"]
         music_url = await self.music_generation(
-            self.data["music_prompt"], duration=self.data["duration"]
+            self.data["music_prompt"], duration=duration
         )
 
         # Collect tasks for each scene
         tasks = [
             self.create_scene(
-                scene["duration"],
+                scene["duration"] if "duration" in scene else 4,
                 scene["video_prompt"],
-                scene["sound_prompt"],
-                scene["text"],
-                scene["generator"],
+                scene["sound_prompt"] if "sound_prompt" in scene else None,
+                scene["text"] if "text" in scene else "",
+                scene["generator"] if "generator" in scene else "glif1",
             )
             for scene in self.data["scenes"]
         ]
@@ -174,7 +212,9 @@ class Film4:
 
     # Function to call Glif API, return URL to image
     async def image_from_prompt(
-        self, prompt: str, glif_id: str = "clooa2ge8002sl60ixieiocdp"
+        self,
+        prompt: str,
+        glif_id: str = "clpklzi650002ks9vo4lm7jqx",  # "clooa2ge8002sl60ixieiocdp"
     ) -> str:
         logging.info("🕒 Calling the Glif API.")
 
@@ -225,6 +265,14 @@ class Film4:
         if not image_url:
             raise ValueError(f"No image returned from Glif API.")
 
+        # Add line breaks to subtitle
+        subtitle = (
+            self.insert_linebreaks(subtitle, 32)
+            .replace("\n", "\\n")
+            .replace('"', '\\"')
+            .replace("'", "\\'")
+        )
+
         # # Download the image file
         # image_filename = await video_generation.download_file(
         #     image_url, f"{self.filename_prefix}img.jpg"
@@ -270,6 +318,8 @@ class Film4:
                 f"-map '[fv]' -c:v libx264 -tune stillimage -pix_fmt yuv420p -t {duration} {output_video_path}"
             )
 
+        logging.info(cmd)
+
         # Run the command asynchronously
         process = await asyncio.create_subprocess_shell(
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
@@ -282,6 +332,8 @@ class Film4:
         if process.returncode != 0:
             error_message = f"FFmpeg command failed: {stderr.decode('utf-8')}"
             raise Exception(error_message)
+
+        logging.info("🟢 Video generated successfully.")
 
         # Return the path to the generated video file
         return os.path.abspath(
@@ -429,7 +481,7 @@ class Film4:
             raise Exception(error_message)
 
         logging.info(
-            "Finished concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
+            f"Finished concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
         )
 
         return os.path.abspath(output_file)
@@ -493,6 +545,27 @@ class Film4:
             if char.isalnum() or char in "_-"
         )[:100]
 
+    def insert_linebreaks(self, input_string, max_line_length):
+        words = input_string.split()
+        current_line_length = 0
+        lines = []
+        current_line = []
+
+        for word in words:
+            if current_line_length + len(word) <= max_line_length:
+                current_line.append(word)
+                current_line_length += len(word) + 1  # Add 1 for the space
+            else:
+                lines.append(" ".join(current_line))
+                current_line = [word]
+                current_line_length = len(word) + 1
+
+        # Add the last line if it contains any words
+        if current_line:
+            lines.append(" ".join(current_line))
+
+        return "\n".join(lines)
+
 
 # Test code to run when script is executed directly
 if __name__ == "__main__":
@@ -518,11 +591,14 @@ if __name__ == "__main__":
         ]
     }"""
 
-    film4 = Film4(example_json_input)
+    film4 = Film4()
+    # film4.data = json.loads(example_json_input)
 
     # Run the generate method in an asyncio event loop
     loop = asyncio.get_event_loop()
     try:
+        loop.run_until_complete(film4.ad_json_from_text("7 minute abs"))
+
         combined_video_filename = loop.run_until_complete(film4.generate())
         print(f"Generated combined video: {combined_video_filename}")
     except Exception as e:

@@ -16,6 +16,7 @@ from video_generation import (
 from glif import image_glif, story_glif, chattorio_glif
 from dotenv import load_dotenv
 import config
+from film4 import Film4
 
 
 # Load environment variables from the .env file
@@ -25,7 +26,6 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
 
 
 # Discord Bot
@@ -153,10 +153,6 @@ async def video(ctx, *, prompt: str):
         await ctx.send(f"An error occurred while handling your video request: {e}")
 
 
-
-
-
-
 @slash_command(
     name="film4",
     description="Generate a film from text",
@@ -184,14 +180,7 @@ async def film4(ctx, *, prompt: str):
         logging.exception("An error occurred while handling the image request.")
         await ctx.send(f"An error occurred while handling your image request: {e}")
 
-
-
     # HERE
-
-
-
-
-
 
 
 @slash_command(
@@ -342,6 +331,37 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
 
 
 @slash_command(
+    name="advert",
+    description="Generate a short TV advertisement",
+    scopes=[config.ACTIVE_CHANNEL_ID],
+)
+@slash_option(
+    name="prompt",
+    description="Describe the product that the ad will be for.",
+    required=True,
+    opt_type=OptionType.STRING,
+)
+async def advert(ctx, *, prompt: str):
+    await ctx.defer()
+    logging.info(f"🔵 Creating TV advert for: {prompt}")
+
+    film4 = Film4()
+
+    # Run the generate method in an asyncio event loop
+    try:
+        await film4.ad_json_from_text(prompt)
+        logging.info(f"Creating video")
+        combined_video_filename = await film4.generate()
+        logging.info(f"Generated combined video: {combined_video_filename}")
+
+        await ctx.send_message(content=prompt, file=File(combined_video_filename))
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        await ctx.send(f"An error occurred while handling your advert request: {e}")
+
+
+@slash_command(
     name="chattorio",
     description="Make a chattorio move",
     scopes=[config.ACTIVE_CHANNEL_ID],
@@ -364,7 +384,6 @@ async def film2(ctx, *, prompt: str, duration: int = 12):
     required=False,
     opt_type=OptionType.STRING,
 )
-
 async def chattorio(ctx, *, action: str, glif_id: str = None, inventory: str = None):
     await ctx.defer()
     logging.info(f"🔵 Doing chattorio for: {action}")
@@ -375,15 +394,18 @@ async def chattorio(ctx, *, action: str, glif_id: str = None, inventory: str = N
 
     try:
         start_state, narrator, reasoning, image, updated_state = await chattorio_glif(
-            action_input_text=action, player_id=player_id, glif_id=glif_id, inventory=inventory
+            action_input_text=action,
+            player_id=player_id,
+            glif_id=glif_id,
+            inventory=inventory,
         )
         if not narrator:
             await ctx.send("An error occurred in chattorio.")
             return
 
         if image:
-            await ctx.send(image) # Should be a URL
-            
+            await ctx.send(image)  # Should be a URL
+
         await ctx.send(
             ""
             + "## Game update:\n"
@@ -403,7 +425,9 @@ async def chattorio(ctx, *, action: str, glif_id: str = None, inventory: str = N
             + "```\n"
             + "||"
         )
-        logging.info("🟢" + f" Finished chattorio move for {player_id} performing {action})")
+        logging.info(
+            "🟢" + f" Finished chattorio move for {player_id} performing {action})"
+        )
 
     except Exception as e:
         logging.exception("An error occurred while handling the chattorio request.")
