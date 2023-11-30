@@ -22,7 +22,9 @@ class Film4:
     # Function that calls glif API wiht id clpkl1gt8005ymrou8dvkblqv , returns json
     async def ad_json_from_text(self, prompt: str):
         logging.info("🕒 Calling the Glif API.")
-        glif_id = "clpkl1gt8005ymrou8dvkblqv"
+        # TODO: Change to come from env var
+        # glif_id = "clpkl1gt8005ymrou8dvkblqv" # Stan's
+        glif_id = "clpl0fv0x000ne48qaxajldu6"  # Fabian's
 
         # if config.DO_FAKE_RESULTS:
         #     # return "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
@@ -58,6 +60,11 @@ class Film4:
 
         narration = self.data["narration"]
         speech_filename = f"{self.filename_prefix}narration.mp3"
+        voice_model_id = (
+            self.data["narration"]
+            if "voice_model_id" in self.data
+            else "T8Yl7BPwFrIshyDyPKau"
+        )
 
         # Default duration is 12 seconds
         duration = self.data["duration"] if "duration" in self.data else 12
@@ -75,7 +82,11 @@ class Film4:
         ]
 
         # Add speech_from_text and music_generation tasks to the list
-        tasks.append(self.speech_from_text(narration, speech_filename))
+        tasks.append(
+            self.speech_from_text(
+                narration, speech_filename, voice_model_id=voice_model_id
+            )
+        )
         tasks.append(
             self.music_generation(self.data["music_prompt"], duration=duration)
         )
@@ -145,7 +156,9 @@ class Film4:
         output_format: str = "mp3",  # "wav"
         seed=None,
     ):
-        logging.info(f"🕒 Calling the Replicate API for music_generation. {duration} seconds.")
+        logging.info(
+            f"🕒 Calling the Replicate API for music_generation. {duration} seconds.
+        ")
 
         # Testing
         if config.DO_FAKE_RESULTS:
@@ -262,7 +275,9 @@ class Film4:
             return "test_files/video_gen_sample.mp4"
 
         # Generate image from prompt using glif API
-        image_url = await self.image_from_prompt(prompt)
+        image_url = await self.image_from_prompt(
+            prompt, glif_id="clpljuz4w00046j7svzyue8ur"
+        )
 
         if not image_url:
             raise ValueError(f"No image returned from Glif API.")
@@ -432,7 +447,10 @@ class Film4:
             "Content-Type": "application/json",
             "xi-api-key": config.ELEVENLABS_API_TOKEN,
         }
-        data = {"text": text}
+        data = {
+            "text": text,
+            "model_id": "eleven_turbo_v2"
+        }
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=data) as response:
