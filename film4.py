@@ -7,7 +7,6 @@ import aiohttp
 import shutil
 import json
 import os
-import video_generation
 
 
 class Film4:
@@ -448,7 +447,10 @@ class Film4:
                     logging.error(text)
 
     async def concatenate_videos_with_audio(
-        self, video_files: List[str], audio_file: str, output_file: str = "./temp_files/output.mp4"
+        self,
+        video_files: List[str],
+        audio_file: str,
+        output_file: str = "./temp_files/output.mp4",
     ):
         logging.info(
             f"🎬 Concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
