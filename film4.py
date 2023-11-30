@@ -90,7 +90,7 @@ class Film4:
         combined_video_filename = await self.concatenate_videos_with_audio(
             video_filenames,
             speech_filename,
-            "output.mp4",
+            f"{self.filename_prefix}combined_video.mp4",
         )
 
         logging.info(f"🟢 Generated video: {combined_video_filename}")
@@ -270,7 +270,7 @@ class Film4:
         # Add line breaks to subtitle
         subtitle = (
             self.insert_linebreaks(subtitle, 32)
-            .replace("\n", "\\n")
+            .replace("\n", "\\\\n")
             .replace('"', '\\"')
             .replace("'", "\\'")
         )
