@@ -346,6 +346,7 @@ async def advert(ctx, *, prompt: str):
     logging.info(f"🔵 Creating TV advert for: {prompt}")
 
     film4 = Film4()
+    film4.filename_prefix = temp_file_prefix(ctx)
 
     # Run the generate method in an asyncio event loop
     try:

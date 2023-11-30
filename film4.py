@@ -59,8 +59,8 @@ class Film4:
         narration = self.data["narration"]
         speech_filename = f"{self.filename_prefix}narration.mp3"
 
-        # Default duration is 10 seconds
-        duration = self.data["duration"] if "duration" in self.data else 10
+        # Default duration is 12 seconds
+        duration = self.data["duration"] if "duration" in self.data else 12
 
         # Collect tasks for each scene
         tasks = [
@@ -88,9 +88,9 @@ class Film4:
         music_url = results[-1]
 
         combined_video_filename = await self.concatenate_videos_with_audio(
-            video_filenames,
-            speech_filename,
-            f"{self.filename_prefix}combined_video.mp4",
+            video_files=video_filenames,
+            audio_files=[speech_filename, music_url],
+            output_file=f"{self.filename_prefix}combined_video.mp4",
         )
 
         logging.info(f"🟢 Generated video: {combined_video_filename}")
@@ -132,7 +132,7 @@ class Film4:
     async def music_generation(
         self,
         prompt: str,
-        duration: int = 8,
+        duration: int = 12,
         model_version: str = "melody",
         continuation_end: int = 0,  # 9,
         continuation_start: int = 0,  # 7,
@@ -145,7 +145,7 @@ class Film4:
         output_format: str = "mp3",  # "wav"
         seed=None,
     ):
-        logging.info("🕒 Calling the Replicate API for music_generation.")
+        logging.info(f"🕒 Calling the Replicate API for music_generation. {duration} seconds.")
 
         # Testing
         if config.DO_FAKE_RESULTS:
@@ -271,8 +271,7 @@ class Film4:
         subtitle = (
             self.insert_linebreaks(subtitle, 32)
             # .replace("\n", "\\\\n")
-            .replace('"', '\\"')
-            .replace("'", "\\'")
+            .replace('"', '\\"').replace("'", "\\'")
         )
 
         # # Download the image file
@@ -449,26 +448,37 @@ class Film4:
     async def concatenate_videos_with_audio(
         self,
         video_files: List[str],
-        audio_file: str,
+        audio_files: List[str],
         output_file: str = "./temp_files/output.mp4",
     ):
         logging.info(
-            f"🎬 Concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
+            f"🎬 Concatenating {len(video_files)} videos with {len(audio_files)} audio files into {output_file}"
         )
 
         # Ensure FFmpeg is installed
         if not shutil.which("ffmpeg"):
             raise RuntimeError("FFmpeg is not installed or not in the PATH.")
 
-        # Build the FFmpeg command
-        input_cmd = " ".join(f"-i {video}" for video in video_files)
-        filter_complex = " ".join(f"[{i}:v]" for i in range(len(video_files)))
+        # Build the FFmpeg command for video and audio inputs
+        video_input_cmd = " ".join(f'-i "{video}"' for video in video_files)
+        audio_input_cmd = " ".join(f'-i "{audio}"' for audio in audio_files)
+        video_filter_complex = " ".join(f"[{i}:v]" for i in range(len(video_files)))
+        audio_filter_complex = " ".join(
+            f"[{len(video_files) + i}:a]" for i in range(len(audio_files))
+        )
         n_videos = len(video_files)
+        n_audios = len(audio_files)
+
+        # Concatenate videos and mix audio files
+        filter_complex = (
+            f"{video_filter_complex}concat=n={n_videos}:v=1:a=0[outv]; "
+            f"{audio_filter_complex}amix=inputs={n_audios}[outa]"
+        )
 
         cmd = (
-            f"ffmpeg {input_cmd} -i {audio_file} "
-            f'-filter_complex "{filter_complex}concat=n={n_videos}:v=1:a=0[outv]" '
-            f'-map "[outv]" -map {n_videos}:a -c:a aac -strict -2 -y {output_file}'
+            f"ffmpeg -y {video_input_cmd} {audio_input_cmd} "
+            f'-filter_complex "{filter_complex}" '
+            f'-map "[outv]" -map "[outa]" -c:v libx264 -c:a aac -strict -2 -y "{output_file}"'
         )
         logging.info(cmd)
 
@@ -486,7 +496,7 @@ class Film4:
             raise Exception(error_message)
 
         logging.info(
-            f"Finished concatenating {len(video_files)} videos with audio {audio_file} into {output_file}"
+            f"Finished concatenating {len(video_files)} videos with {len(audio_files)} audio files into {output_file}"
         )
 
         return os.path.abspath(output_file)
