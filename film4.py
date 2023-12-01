@@ -10,6 +10,7 @@ import os
 import subprocess
 import video_generation
 
+
 class Film4:
     def __init__(self, filename_prefix: str = "./temp_files/film4"):
         logging.basicConfig(level=logging.INFO)
@@ -31,35 +32,39 @@ class Film4:
         #     # return "https://res.cloudinary.com/dzkwltgyd/image/upload/v1699551574/glif-run-outputs/s6s7h7fypr9pr35bpxul.png"
         #     return f"./test_files/wanderingstan_1175179192011333713_img.jpg"
 
-        async with aiohttp.ClientSession() as session:
-            payload = {"id": glif_id, "input": [prompt]}
-            headers = {"Content-Type": "application/json"}
+        for attempt in range(5):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    payload = {"id": glif_id, "input": [prompt]}
+                    headers = {"Content-Type": "application/json"}
 
-            async with session.post(
-                "https://simple-api.glif.app", json=payload, headers=headers
-            ) as response:
-                if response.status == 200:
-                    response_data = await response.json()
+                    async with session.post(
+                        "https://simple-api.glif.app", json=payload, headers=headers
+                    ) as response:
+                        if response.status == 200:
+                            response_data = await response.json()
 
-                    logging.info("response_data:")
-                    logging.info(response_data)
+                            logging.info("response_data:")
+                            logging.info(response_data)
 
-                    ad_json = response_data.get("output", "")
-                    logging.info(f"🟢 Glif API responded with json: {ad_json}")
+                            ad_json = response_data.get("output", "")
+                            logging.info(f"🟢 Glif API responded with json: {ad_json}")
 
-                    if ad_json is None:
-                        raise Exception("No output was returned from the glif.")
+                            if ad_json is None:
+                                raise Exception("No output was returned from the glif.")
 
-                    # Hack for Fabian's bug
-                    # ad_json = ad_json.replace('""', '"')
+                            self.data = json.loads(ad_json)
 
-                    self.data = json.loads(ad_json)
-
-                    return ad_json
-                else:
-                    error_message = f"Error calling Glif API: {response.status}"
-                    logging.error(error_message)
-                    raise Exception(error_message)
+                            return ad_json
+                        else:
+                            error_message = f"Error calling Glif API: {response.status}"
+                            logging.error(error_message)
+                            raise Exception(error_message)
+            except Exception as e:
+                logging.error(f"🔴 Attempt {attempt+1} for Glif json failed: {str(e)}")
+                await asyncio.sleep(1)  # wait for 1 second before next attempt
+        else:
+            raise Exception("All attempts to call Glif API failed.")
 
     async def generate(self):
         if not self.data:
@@ -111,10 +116,11 @@ class Film4:
             output_file=f"{self.filename_prefix}combined_video.mp4",
         )
 
-
         logging.info(f"🟢 Generated video: {combined_video_filename}")
 
-        added_music_filename = await self.add_looping_music(combined_video_filename, music_url)
+        added_music_filename = await self.add_looping_music(
+            combined_video_filename, music_url
+        )
 
         logging.info(f"🟢 Added music to video: {added_music_filename}")
 
@@ -155,28 +161,29 @@ class Film4:
 
         cmd = (
             f"ffmpeg -y "
-            f"-i \"{video_filename}\" "
-            f"-stream_loop -1 -i \"{music_file}\" "
-            f"-filter_complex \""
+            f'-i "{video_filename}" '
+            f'-stream_loop -1 -i "{music_file}" '
+            f'-filter_complex "'
             f"[1:a]volume=0.3[volume_adjusted]; "
-            f"[0:a][volume_adjusted]amix=inputs=2:duration=first[volume_normal]\" "
-            f"-map 0:v -map \"[volume_normal]\" -shortest "
-            f"-y \"{output_filename}\""
+            f'[0:a][volume_adjusted]amix=inputs=2:duration=first[volume_normal]" '
+            f'-map 0:v -map "[volume_normal]" -shortest '
+            f'-y "{output_filename}"'
         )
         logging.info(cmd)
 
         # Run the command
-        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        process = await asyncio.create_subprocess_shell(
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
         stdout, stderr = await process.communicate()
 
         if stdout:
-            logging.info(f'[stdout]\n{stdout.decode()}')
+            logging.info(f"[stdout]\n{stdout.decode()}")
             return output_filename
         if stderr:
-            logging.error(f'Error adding music to video. [stderr]\n{stderr.decode()}')
+            logging.error(f"Error adding music to video. [stderr]\n{stderr.decode()}")
             # raise Exception(f"Error adding music to video: {stderr.decode()}")
             return output_filename
-
 
     async def create_scene(self, duration, video_prompt, sound_prompt, text, generator):
         # Implement your scene creation logic here
