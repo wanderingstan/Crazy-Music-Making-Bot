@@ -7,7 +7,8 @@ import aiohttp
 import shutil
 import json
 import os
-
+import subprocess
+import video_generation
 
 class Film4:
     def __init__(self, filename_prefix: str = "./temp_files/film4"):
@@ -45,6 +46,9 @@ class Film4:
 
                     ad_json = response_data.get("output", "")
                     logging.info(f"🟢 Glif API responded with json: {ad_json}")
+
+                    if ad_json is None:
+                        raise Exception("No output was returned from the glif.")
 
                     # Hack for Fabian's bug
                     # ad_json = ad_json.replace('""', '"')
@@ -103,13 +107,76 @@ class Film4:
 
         combined_video_filename = await self.concatenate_videos_with_audio(
             video_files=video_filenames,
-            audio_files=[speech_filename, music_url],
+            audio_files=[speech_filename],
             output_file=f"{self.filename_prefix}combined_video.mp4",
         )
 
+
         logging.info(f"🟢 Generated video: {combined_video_filename}")
 
-        return combined_video_filename
+        added_music_filename = await self.add_looping_music(combined_video_filename, music_url)
+
+        logging.info(f"🟢 Added music to video: {added_music_filename}")
+
+        return added_music_filename
+
+    async def add_looping_music(self, video_filename, music_url):
+        # Download the music file
+        # music_filename = f"{self.filename_prefix}music.mp3"
+        # os.system(f"wget -O {music_filename} {music_url}")
+
+        music_file = os.path.abspath(f"{self.filename_prefix}music.mp3")
+        await video_generation.download_file(music_url, music_file)
+        logging.info(f"🟢 Saved music to {music_file}")
+
+        # Output filename
+        output_filename = f"{self.filename_prefix}video_with_music.mp4"
+
+        # ffmpeg command to add music to the video
+        # cmd = f"ffmpeg -y -i {video_filename} -i {music_url} -filter_complex \"[1:a]volume=0.5,aloop=loop=-1:size=2e+09[out]\" -map 0:v -map \"[out]\" -y {output_filename}"
+        # cmd = f'ffmpeg -y -i {video_filename} -stream_loop -1 -i {music_url} -filter_complex "[1:a]volume=0.5[outa]" -map 0:v -map "[outa]" -shortest -y {output_filename}'
+
+        # works
+        # ffmpeg -y \
+        #    -i /Users/wanderingstan/Developer/glif/Crazy-Music-Making-Bot/temp_files/wanderingstan_1179945063644680232_combined_video.mp4 \
+        #    -stream_loop -1 -i https://replicate.delivery/pbxt/sYXHNGavfb1pGCRcoDxSFapvXHlldVolC3BywtTk4TJX72eRA/out.mp3 \
+        #    -filter_complex "[0:a][1:a]amix=inputs=2:duration=first,volume=2.0[outa]" \
+        #    -map 0:v -map "[outa]" -shortest \
+        #    -y temp_files/wanderingstan_1179945063644680232_video_with_music.mp4
+
+        # cmd = (
+        #     f"ffmpeg -y "
+        #     f"-i \"{video_filename}\" "
+        #     f"-stream_loop -1 -i \"{music_url}\" "
+        #     f"-filter_complex \"[0:a][1:a]amix=inputs=2:duration=first,volume=2.0[outa]\" "
+        #     f"-map 0:v -map \"[outa]\" -shortest "
+        #     f"-y \"{output_filename}\""
+        # )
+
+        cmd = (
+            f"ffmpeg -y "
+            f"-i \"{video_filename}\" "
+            f"-stream_loop -1 -i \"{music_file}\" "
+            f"-filter_complex \""
+            f"[1:a]volume=0.3[volume_adjusted]; "
+            f"[0:a][volume_adjusted]amix=inputs=2:duration=first[volume_normal]\" "
+            f"-map 0:v -map \"[volume_normal]\" -shortest "
+            f"-y \"{output_filename}\""
+        )
+        logging.info(cmd)
+
+        # Run the command
+        process = await asyncio.create_subprocess_shell(cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await process.communicate()
+
+        if stdout:
+            logging.info(f'[stdout]\n{stdout.decode()}')
+            return output_filename
+        if stderr:
+            logging.error(f'Error adding music to video. [stderr]\n{stderr.decode()}')
+            # raise Exception(f"Error adding music to video: {stderr.decode()}")
+            return output_filename
+
 
     async def create_scene(self, duration, video_prompt, sound_prompt, text, generator):
         # Implement your scene creation logic here
@@ -160,8 +227,8 @@ class Film4:
         seed=None,
     ):
         logging.info(
-            f"🕒 Calling the Replicate API for music_generation." +
-            f"{duration} seconds."
+            f"%s Calling the Replicate API for music_generation. {duration} seconds."
+            % "🕒"
         )
 
         # Testing

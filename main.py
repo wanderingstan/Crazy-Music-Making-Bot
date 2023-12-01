@@ -353,7 +353,7 @@ async def advert(ctx, *, prompt: str):
         await film4.ad_json_from_text(prompt)
         logging.info(f"Creating video")
         combined_video_filename = await film4.generate()
-        logging.info(f"Generated combined video: {combined_video_filename}")
+        logging.info(f"✅ Generated advert video: {combined_video_filename}")
 
         await ctx.send(file=File(combined_video_filename))
         await ctx.send(prompt)
